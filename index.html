@@ -969,8 +969,8 @@ window.setMode=m=>{
   if(mobSalir) mobSalir.style.display = (isAdmin||isTerreno) ? 'flex' : 'none';
   if(mobCerrar) mobCerrar.style.display = (isAdmin||isTerreno) ? 'flex' : 'none';
   // También actualizar barra móvil de perfil
-  const mbar = document.getElementById('mobile-perfil-bar');
-  if(mbar){
+  const perfilBar = document.getElementById('mobile-perfil-bar');
+  if(perfilBar){
     if(isAdmin){ mbar.style.display='block'; mbar.style.background='#1a1a2e'; mbar.innerHTML='⚙️ Administrador de App'; }
     else if(isTerreno){ mbar.style.display='block'; mbar.style.background='#27500A'; mbar.innerHTML='👷 Profesional de Terreno'; }
     else { mbar.style.display='none'; }
