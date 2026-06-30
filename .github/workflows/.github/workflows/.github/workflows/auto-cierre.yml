@@ -1,0 +1,122 @@
+name: Auto-cierre diario
+
+on:
+  schedule:
+    - cron: '5 4 * * 2-6'
+  workflow_dispatch:
+    inputs:
+      fecha_override:
+        description: 'Fecha a cerrar (DD/MM/YYYY). Vacio = ayer.'
+        required: false
+        default: ''
+
+jobs:
+  auto-cierre:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar pytz
+        run: pip install pytz
+
+      - name: Ejecutar auto-cierre
+        run: |
+          python3 << 'PYEOF'
+          import json, urllib.request, sys
+          from datetime import datetime, timedelta
+          import pytz
+
+          chile_tz = pytz.timezone('America/Santiago')
+          now_chile = datetime.now(chile_tz)
+
+          fecha_override = '${{ github.event.inputs.fecha_override }}'
+          if fecha_override.strip():
+              parts = fecha_override.strip().split('/')
+              target = datetime(int(parts[2]), int(parts[1]), int(parts[0]))
+              fecha_str = fecha_override.strip()
+          else:
+              target = now_chile - timedelta(days=1)
+              fecha_str = target.strftime('%d/%m/%Y')
+
+          if target.weekday() >= 5:
+              print("Dia " + fecha_str + " es fin de semana, no se ejecuta")
+              sys.exit(0)
+
+          print("Auto-cierre para: " + fecha_str)
+          ts_iso = now_chile.isoformat()
+
+          PROJECTS = [
+              {'name': 'helsby',     'db': 'https://control-de-rs-default-rtdb.firebaseio.com'},
+              {'name': 'uribe',      'db': 'https://control-de-rs---armando-uribe-default-rtdb.firebaseio.com'},
+              {'name': 'venturelli', 'db': 'https://control-de-rs---j-venturelli-default-rtdb.firebaseio.com'},
+              {'name': 'maturana',   'db': 'https://control-de-rs---e-maturana-default-rtdb.firebaseio.com'},
+          ]
+
+          STATE_RANK = {'ND': 0, 'R0': 1, 'R1': 2, 'RF': 3}
+
+          def get_json(url):
+              try:
+                  with urllib.request.urlopen(url, timeout=15) as r:
+                      data = r.read()
+                      return json.loads(data) if data not in (b'null', b'') else None
+              except Exception as e:
+                  print("  Error GET " + url + ": " + str(e))
+                  return None
+
+          def post_json(url, data):
+              body = json.dumps(data).encode()
+              req = urllib.request.Request(url, body, {'Content-Type': 'application/json'}, method='POST')
+              with urllib.request.urlopen(req, timeout=15) as r:
+                  return json.loads(r.read())
+
+          def fecha_to_dt(f):
+              parts = f.split('/')
+              if len(parts) != 3:
+                  return datetime.min
+              try:
+                  return datetime(int(parts[2]), int(parts[1]), int(parts[0]))
+              except:
+                  return datetime.min
+
+          for proj in PROJECTS:
+              name = proj['name']
+              db = proj['db']
+              print("\n--- " + name + " ---")
+              try:
+                  cierres = get_json(db + '/' + name + '/cierres.json') or {}
+
+                  if any(c.get('fecha') == fecha_str for c in cierres.values()):
+                      print("  Ya existe cierre para " + fecha_str)
+                      continue
+
+                  houses = get_json(db + '/' + name + '/v2.json') or {}
+                  patios = get_json(db + '/' + name + '/patios.json') or {}
+
+                  actual = {'R0': 0, 'R1': 0, 'RF': 0, 'RFE': 0}
+                  for h in houses.values():
+                      rank = STATE_RANK.get(h.get('state', 'ND'), 0)
+                      if rank >= 1: actual['R0'] += 1
+                      if rank >= 2: actual['R1'] += 1
+                      if rank >= 3: actual['RF'] += 1
+                  actual['RFE'] = sum(1 for p in patios.values() if p.get('rfExt'))
+                  print("  Actual: " + str(actual))
+
+                  lab = sorted(
+                      [c for c in cierres.values() if fecha_to_dt(c.get('fecha','')).weekday() < 5],
+                      key=lambda c: fecha_to_dt(c.get('fecha',''))
+                  )
+                  anterior = lab[-1].get('acumulado', {}) if lab else {}
+                  delta = {k: actual[k] - (anterior.get(k) or 0) for k in ['R0','R1','RF','RFE']}
+                  print("  Delta: " + str(delta))
+
+                  result = post_json(db + '/' + name + '/cierres.json', {
+                      'delta': delta, 'acumulado': actual,
+                      'fecha': fecha_str, 'ts': ts_iso, 'auto': True
+                  })
+                  print("  OK: " + str(result))
+
+              except Exception as e:
+                  print("  ERROR: " + str(e))
+                  import traceback
+                  traceback.print_exc()
+
+          print("\nFin.")
+          PYEOF
