@@ -231,6 +231,7 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
       <div class="stitle">Herramientas</div>
       <button class="mbtn active" id="btn-draw" onclick="setMode(&#39;draw&#39;)">✏️ Dibujar vivienda</button>
       <button class="mbtn" id="btn-draw-patio" onclick="setMode(&#39;draw-patio&#39;)" style="border-color:#F5C400;color:#7a6000">🟡 Dibujar RF Exterior</button>
+      <button class="mbtn" id="btn-paste-patio" onclick="setMode(&#39;paste-patio&#39;)" style="display:none;border-color:#F5C400;color:#7a6000">📋 Pegar patio</button>
       <button class="mbtn" id="btn-move" onclick="setMode(&#39;move&#39;)">✥ Mover vivienda</button>
       <button class="mbtn" id="btn-view" onclick="setMode(&#39;view&#39;)">👁 Solo vista</button>
       <div style="height:1px;background:#eee"></div>
@@ -466,6 +467,7 @@ let panning = false, panSt = {x:0,y:0};
 let dragging = null, dragOff = {x:0,y:0};
 let drawPts = [], hoverHouse = null, hoverPatio = null;
 let patios = {};
+let copiedPatio = null;
 let modalAction = 'pin', pendingHouse = null;
 
 const canvas = document.getElementById('overlay');
@@ -503,6 +505,7 @@ onValue(patiosRef, snap => {
   patios = snap.val() || {};
   draw();
   updateStats();
+  mobileUpdateStats();
 });
 
 // ── Plano ─────────────────────────────────────────────
@@ -767,6 +770,16 @@ function hitTest(cx,cy) {
 canvas.addEventListener('click', e => {
   const r=canvas.getBoundingClientRect();
   const cx=e.clientX-r.left, cy=e.clientY-r.top;
+  if(mode==='paste-patio'&&isAdmin&&copiedPatio){
+    const mp=toM(cx,cy);
+    const cxc=copiedPatio.reduce((s,p)=>s+p.x,0)/copiedPatio.length;
+    const cyc=copiedPatio.reduce((s,p)=>s+p.y,0)/copiedPatio.length;
+    const dx=mp.x-cxc, dy=mp.y-cyc;
+    const newPts=copiedPatio.map(p=>({x:p.x+dx,y:p.y+dy}));
+    const pid='p'+Date.now();
+    set(ref(db,'helsby/patios/'+pid),{id:pid,pts:newPts,rfExt:false});
+    return;
+  }
   if((mode==='draw'||mode==='draw-patio')&&isAdmin){
     const mp=toM(cx,cy);
     if(drawPts.length>=3){
@@ -990,6 +1003,9 @@ function showCtxMenu(mx,my,h){
   ctxMenu.style.left=mx+'px'; ctxMenu.style.top=my+'px';
 }
 document.addEventListener('click',()=>ctxMenu.style.display='none');
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&mode==='paste-patio'){ setMode('view'); }
+});
 
 // ── Modal ─────────────────────────────────────────────
 window.requestAcceso=()=>{
@@ -1056,11 +1072,12 @@ window.salirAdmin=()=>{
 window.setMode=m=>{
   mode=m;
   ['draw','move','view','draw-patio'].forEach(x=>document.getElementById('btn-'+x.replace('-',''))?document.getElementById('btn-'+x.replace('-',''))?.classList.toggle('active',x===m):null);
-  ['btn-draw','btn-move','btn-view','btn-draw-patio'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.remove('active'); });
-  const activeBtn = document.getElementById(m==='draw-patio'?'btn-draw-patio':'btn-'+m);
+  ['btn-draw','btn-move','btn-view','btn-draw-patio','btn-paste-patio'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.remove('active'); });
+  const activeBtn = document.getElementById(m==='draw-patio'?'btn-draw-patio':m==='paste-patio'?'btn-paste-patio':'btn-'+m);
   if(activeBtn) activeBtn.classList.add('active');
   if(m==='draw'){ hint.style.display='block'; hint.textContent='Haz clic para trazar los vértices de la vivienda'; }
   else if(m==='draw-patio'){ hint.style.display='block'; hint.textContent='Haz clic para trazar el polígono RF Exterior (patio)'; }
+  else if(m==='paste-patio'){ hint.style.display='block'; hint.textContent='📋 Haz clic donde quieres pegar el patio copiado (Esc para cancelar)'; }
   else { hint.style.display='none'; drawPts=[]; }
   // Actualizar label de perfil en header
   const lbl = document.getElementById('hdr-mode');
@@ -1164,6 +1181,19 @@ function showPatioCtxMenu(mx,my,p){
     bmrk.onclick=()=>{ update(ref(db,'helsby/patios/'+p.id),{rfExt:true,rfExtDate:getTodayISO()}); ctxMenu.style.display='none'; };
   }
   ctxMenu.appendChild(bmrk);
+  // Botón copiar forma
+  const sepc=document.createElement('div'); sepc.className='sep'; ctxMenu.appendChild(sepc);
+  const bcopy=document.createElement('button');
+  bcopy.innerHTML='📋 Copiar forma';
+  bcopy.style.color='#7a6000'; bcopy.style.fontWeight='bold';
+  bcopy.onclick=()=>{
+    copiedPatio=[...p.pts];
+    const btn=document.getElementById('btn-paste-patio');
+    if(btn) btn.style.display='';
+    setMode('paste-patio');
+    ctxMenu.style.display='none';
+  };
+  ctxMenu.appendChild(bcopy);
   if(isAdmin){
     const sep=document.createElement('div'); sep.className='sep'; ctxMenu.appendChild(sep);
     const dl=document.createElement('button'); dl.style.color='#c0392b';
