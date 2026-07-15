@@ -50,7 +50,7 @@ jobs:
               {'name': 'maturana',   'db': 'https://control-de-rs---e-maturana-default-rtdb.firebaseio.com'},
           ]
 
-          STATE_RANK = {'ND': 0, 'R0': 1, 'R1': 2, 'RF': 3}
+          STATE_RANK = {'ND': 0, 'R0': 1, 'R1F': 2, 'R1': 3, 'RFF': 4, 'RF': 5}
 
           def get_json(url):
               try:
@@ -76,6 +76,15 @@ jobs:
               except:
                   return datetime.min
 
+          def prev_val(anterior, key):
+              if key in anterior:
+                  return anterior.get(key) or 0
+              if key == 'R1F':
+                  return anterior.get('R1') or 0
+              if key == 'RFF':
+                  return anterior.get('RF') or 0
+              return 0
+
           for proj in PROJECTS:
               name = proj['name']
               db = proj['db']
@@ -90,12 +99,14 @@ jobs:
                   houses = get_json(db + '/' + name + '/v2.json') or {}
                   patios = get_json(db + '/' + name + '/patios.json') or {}
 
-                  actual = {'R0': 0, 'R1': 0, 'RF': 0, 'RFE': 0}
+                  actual = {'R0': 0, 'R1F': 0, 'R1': 0, 'RFF': 0, 'RF': 0, 'RFE': 0}
                   for h in houses.values():
                       rank = STATE_RANK.get(h.get('state', 'ND'), 0)
                       if rank >= 1: actual['R0'] += 1
-                      if rank >= 2: actual['R1'] += 1
-                      if rank >= 3: actual['RF'] += 1
+                      if rank >= 2: actual['R1F'] += 1
+                      if rank >= 3: actual['R1'] += 1
+                      if rank >= 4: actual['RFF'] += 1
+                      if rank >= 5: actual['RF'] += 1
                   actual['RFE'] = sum(1 for p in patios.values() if p.get('rfExt'))
                   print("  Actual: " + str(actual))
 
@@ -104,7 +115,7 @@ jobs:
                       key=lambda c: fecha_to_dt(c.get('fecha',''))
                   )
                   anterior = lab[-1].get('acumulado', {}) if lab else {}
-                  delta = {k: actual[k] - (anterior.get(k) or 0) for k in ['R0','R1','RF','RFE']}
+                  delta = {k: actual[k] - prev_val(anterior, k) for k in ['R0','R1F','R1','RFF','RF','RFE']}
                   print("  Delta: " + str(delta))
 
                   result = post_json(db + '/' + name + '/cierres.json', {
