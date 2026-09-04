@@ -28,6 +28,7 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
 .b-rff{background:#F1E6F8;color:#6C2A8C}
 .b-rf{background:#f0f0f0;color:#222}
 .b-nd{background:#F1EFE8;color:#5F5E5A}.b-rfe{background:#FFF9C4;color:#7a6000}
+.b-dom{background:#E4E4E4;color:#111}
 .mbtn{width:100%;padding:7px 10px;border-radius:8px;border:1px solid #ddd;background:#fff;font-size:12px;cursor:pointer;text-align:left;color:#333}
 .mbtn:hover{background:#f5f3ef}
 .mbtn.active{border-color:#378ADD;background:#E6F1FB;color:#0C447C;font-weight:500}
@@ -173,6 +174,7 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
       <div class="stat-row"><span class="badge b-rff">RF Interior Fichaje</span><strong id="s-rff">0</strong></div>
       <div class="stat-row"><span class="badge b-rf">RF Interior Recibida ✓</span><strong id="s-rf">21</strong></div>
       <div class="stat-row"><span class="badge b-rfe">RF Exterior ✓</span><strong id="s-rfe">0</strong></div>
+      <div class="stat-row"><span class="badge b-dom">DOM ✓</span><strong id="s-dom">0</strong></div>
       <div class="stat-row"><span class="badge b-nd">S/D</span><strong id="s-nd">138</strong></div>
     </div>
 
@@ -232,6 +234,13 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
           <rect x="2" y="2" width="24" height="16" fill="rgba(245,196,0,0.15)" stroke="#F5C400" stroke-width="2.5"></rect>
         </svg>
         RF Exterior
+      </button>
+      <button class="fbtn active" id="fb-dom" onclick="toggleFilter(&#39;DOM&#39;,this)">
+        <svg width="28" height="20" style="flex-shrink:0">
+          <rect x="2" y="2" width="24" height="16" fill="none" stroke="#bbb" stroke-width="1"></rect>
+          <text x="14" y="14" text-anchor="middle" font-size="9" font-weight="700" fill="#111" font-family="system-ui">DOM</text>
+        </svg>
+        DOM
       </button>
     </div>
 
@@ -374,6 +383,9 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
     <div class="mob-stat" style="border-right:1px solid #eee;padding:0 10px;background:#FFF9C4">
       <span style="color:#7a6000;font-weight:600">RF Ext.</span><strong id="ms-rfe" style="color:#7a6000">0</strong>
     </div>
+    <div class="mob-stat" style="border-right:1px solid #eee;padding:0 10px;background:#E4E4E4">
+      <span style="color:#111;font-weight:600">DOM</span><strong id="ms-dom" style="color:#111">0</strong>
+    </div>
     <div class="mob-stat" style="padding-left:10px">
       <span style="color:#888">S/D</span><strong id="ms-nd">0</strong>
     </div>
@@ -388,6 +400,7 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
     <button id="mfb-rf" class="mob-btn" onclick="toggleMobileFilter(&#39;RF&#39;)" style="flex:1;min-width:60px;padding:7px 4px;background:#1a1a2e;color:#fff;font-size:12px;border-radius:8px;border:2px solid #1a1a2e;flex-direction:column">RF Recib.<span style="font-size:9px">ver</span></button>
     <button id="mfb-nd" class="mob-btn" onclick="toggleMobileFilter(&#39;ND&#39;)" style="flex:1;min-width:60px;padding:7px 4px;background:#f5f3ef;color:#666;font-size:12px;border-radius:8px;border:2px solid #ccc;flex-direction:column">S/D<span style="font-size:9px">ver</span></button>
     <button id="mfb-rfe" class="mob-btn" onclick="toggleMobileFilter(&#39;RFE&#39;)" style="flex:1;min-width:60px;padding:7px 4px;background:#FFF9C4;color:#7a6000;font-size:12px;border-radius:8px;border:2px solid #7a6000;flex-direction:column">RF Ext.<span style="font-size:9px">ver</span></button>
+    <button id="mfb-dom" class="mob-btn" onclick="toggleMobileFilter(&#39;DOM&#39;)" style="flex:1;min-width:60px;padding:7px 4px;background:#E4E4E4;color:#111;font-size:12px;border-radius:8px;border:2px solid #111;flex-direction:column">DOM<span style="font-size:9px">ver</span></button>
 
     <button onclick="verHistorial()" style="flex:1;min-width:90px;padding:7px 4px;background:#f0ede6;color:#555;font-size:11px;font-weight:600;border-radius:8px;border:none;flex-direction:column;display:flex">📅 Historial<span style="font-size:9px">avance</span></button>
     <button onclick="verDetalle()" style="flex:1;min-width:90px;padding:7px 4px;background:#f0ede6;color:#555;font-size:11px;font-weight:600;border-radius:8px;border:none;flex-direction:column;display:flex">📊 Detalle<span style="font-size:9px">tipología</span></button>
@@ -490,7 +503,7 @@ const COL_RFF = '#6C2A8C'; // morado RF fichaje
 
 let houses = {}, mode = 'view', isAdmin = false, isTerreno = false;
 let lastCierreDate = ''; // fecha del último cierre (YYYY-MM-DD)
-let filters = new Set(['R0','R1F','R1','RFF','RF','ND','RFE']);
+let filters = new Set(['R0','R1F','R1','RFF','RF','ND','RFE','DOM']);
 let scale = 1, offX = 0, offY = 0;
 let panning = false, panSt = {x:0,y:0};
 let dragging = null, dragOff = {x:0,y:0};
@@ -752,6 +765,27 @@ function draw() {
       ctx.fillText(h.num, cx2, cy2);
     }
 
+    // ── DOM: marca independiente del estado — texto negro en negrita sobre la vivienda ──
+    if (h.dom && filters.has('DOM')) {
+      const minXd = Math.min(...pts.map(p=>p.x));
+      const maxXd = Math.max(...pts.map(p=>p.x));
+      const minYd = Math.min(...pts.map(p=>p.y));
+      const maxYd = Math.max(...pts.map(p=>p.y));
+      const cxd = (minXd + maxXd) / 2;
+      const cyd = minYd + (maxYd - minYd) * 0.26; // arriba del centro, no choca con ícono R1/RF
+      const fsd = Math.max(8, 11*scale);
+      ctx.font = `800 ${fsd}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      // Halo blanco para que se lea sobre la capa oscura de RF
+      ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+      ctx.lineWidth = Math.max(2.5, 3.5*scale);
+      ctx.lineJoin = 'round';
+      ctx.strokeText('DOM', cxd, cyd);
+      ctx.fillStyle = '#000';
+      ctx.fillText('DOM', cxd, cyd);
+    }
+
     // Vivienda sin estado — línea punteada tenue
     if (rank === 0 && filters.has('ND')) {
       tracePath();
@@ -937,7 +971,8 @@ canvas.addEventListener('mousemove', e=>{
     tooltip.style.display='block';
     tooltip.style.left=(e.clientX+14)+'px';
     tooltip.style.top=(e.clientY-10)+'px';
-    tooltip.innerHTML=`<strong>Vivienda ${h.num||'?'}</strong><br><span style="font-size:11px;color:#888">${stLabel}</span>${tipoHtml}`;
+    const domHtml = h.dom ? `<br><span style="font-size:10px;font-weight:700;color:#111;background:#E4E4E4;padding:1px 6px;border-radius:8px;display:inline-block;margin-top:3px">DOM ✓</span>` : '';
+    tooltip.innerHTML=`<strong>Vivienda ${h.num||'?'}</strong><br><span style="font-size:11px;color:#888">${stLabel}</span>${domHtml}${tipoHtml}`;
   } else {
     canvas.style.cursor=mode==='draw'&&isAdmin?'crosshair':'default';
     tooltip.style.display='none';
@@ -986,7 +1021,8 @@ function showReadonlyInfo(mx, my, h) {
   if (top < 8) top = 8;
   popup.style.left = left + 'px';
   popup.style.top = top + 'px';
-  popup.innerHTML = `<div style="font-weight:700;color:#1a1a2e;margin-bottom:7px">Vivienda ${h.num||'?'}</div><div><span style="background:${stBg};color:${stColor};padding:2px 9px;border-radius:12px;font-size:11px;font-weight:600">${stLabel}</span></div>${tipoHtml}`;
+  const domBadge = h.dom ? `<div style="margin-top:6px"><span style="background:#E4E4E4;color:#111;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700">DOM ✓</span></div>` : '';
+  popup.innerHTML = `<div style="font-weight:700;color:#1a1a2e;margin-bottom:7px">Vivienda ${h.num||'?'}</div><div><span style="background:${stBg};color:${stColor};padding:2px 9px;border-radius:12px;font-size:11px;font-weight:600">${stLabel}</span></div>${domBadge}${tipoHtml}`;
   document.body.appendChild(popup);
   setTimeout(() => {
     const close = e => { if (!popup.contains(e.target)) { popup.remove(); document.removeEventListener('click', close); document.removeEventListener('touchend', close); } };
@@ -1097,6 +1133,26 @@ function showCtxMenu(mx,my,h){
     bclear.onclick=()=>{ update(ref(db,'helsby/v2/'+h.id),{state:'ND',stateDate:null,rankDates:null}); ctxMenu.style.display='none'; };
   }
   ctxMenu.appendChild(bclear);
+  // ── DOM: marca independiente del estado (mismo bloqueo por cierre de día) ──
+  const sepDom=document.createElement('div'); sepDom.className='sep'; ctxMenu.appendChild(sepDom);
+  const hoyDom = getTodayISO();
+  const domLocked = isTerreno && lastCierreDate && h.domDate && h.domDate < hoyDom && h.domDate <= lastCierreDate;
+  const bdom=document.createElement('button');
+  if(h.dom){
+    if(domLocked){
+      bdom.textContent='🔒 DOM bloqueado (cierre de día registrado)';
+      bdom.style.color='#bbb'; bdom.style.fontSize='11px'; bdom.style.cursor='not-allowed'; bdom.disabled=true;
+    } else {
+      bdom.textContent='↩ Quitar DOM';
+      bdom.style.color='#888';
+      bdom.onclick=()=>{ update(ref(db,'helsby/v2/'+h.id),{dom:null,domDate:null}); ctxMenu.style.display='none'; };
+    }
+  } else {
+    bdom.innerHTML='<strong>🏛 Marcar DOM</strong>';
+    bdom.style.color='#111';
+    bdom.onclick=()=>{ update(ref(db,'helsby/v2/'+h.id),{dom:true,domDate:getTodayISO()}); ctxMenu.style.display='none'; };
+  }
+  ctxMenu.appendChild(bdom);
   if(isAdmin){
     const s=document.createElement('div'); s.className='sep'; ctxMenu.appendChild(s);
     // Asignar tipología
@@ -1269,6 +1325,7 @@ function updateStats(){
   document.getElementById('s-rff').textContent=c.RFF||0;
   document.getElementById('s-rf').textContent=c.RF||0;
   document.getElementById('s-rfe').textContent=Object.values(patios).filter(p=>p.rfExt).length;
+  document.getElementById('s-dom').textContent=Object.values(houses).filter(h=>h.dom).length;
   document.getElementById('s-nd').textContent=c.ND||0;
 }
 
@@ -1357,6 +1414,7 @@ function mobileUpdateStats() {
   document.getElementById('ms-rff').textContent=c.RFF||0;
   document.getElementById('ms-rf').textContent=c.RF||0;
   document.getElementById('ms-rfe').textContent=Object.values(patios).filter(p=>p.rfExt).length;
+  document.getElementById('ms-dom').textContent=Object.values(houses).filter(h=>h.dom).length;
   document.getElementById('ms-nd').textContent=c.ND||0;
 }
 
@@ -1541,7 +1599,7 @@ onValue(cierreRef, snap => {
 });
 
 function getCounts() {
-  const c = {R0:0, R1F:0, R1:0, RFF:0, RF:0, ND:0, RFE:0, total:0};
+  const c = {R0:0, R1F:0, R1:0, RFF:0, RF:0, ND:0, RFE:0, DOM:0, total:0};
   Object.values(houses).forEach(h => {
     const rank = STATE_RANK[h.state||'ND'];
     if(rank>=1) c.R0++;
@@ -1550,6 +1608,7 @@ function getCounts() {
     if(rank>=4) c.RFF++;
     if(rank>=5) c.RF++;
     if(rank===0) c.ND++;
+    if(h.dom) c.DOM++; // independiente del estado
     c.total++;
   });
   c.RFE = Object.values(patios).filter(p=>p.rfExt).length;
@@ -1582,7 +1641,7 @@ window.mostrarCierreDia = async () => {
   } else {
     keyAnterior = laborableKeys.length > 0 ? laborableKeys[laborableKeys.length-1] : null;
   }
-  const anterior = keyAnterior ? cierres[keyAnterior].acumulado : {R0:0, R1F:0, R1:0, RFF:0, RF:0, RFE:0};
+  const anterior = keyAnterior ? cierres[keyAnterior].acumulado : {R0:0, R1F:0, R1:0, RFF:0, RF:0, RFE:0, DOM:0};
 
   const actual = getCounts();
   const delta = {
@@ -1592,6 +1651,7 @@ window.mostrarCierreDia = async () => {
     RFF: actual.RFF - ((anterior.RFF !== undefined ? anterior.RFF : anterior.RF) || 0), // cierres previos a RF fichaje: se asume que ocurrio junto con RF recibida
     RF: actual.RF - (anterior.RF||0),
     RFE: actual.RFE - (anterior.RFE||0),
+    DOM: actual.DOM - (anterior.DOM||0), // DOM es independiente del avance de Rs
   };
 
   const warningHtml = cierreHoy ? `
@@ -1605,7 +1665,7 @@ window.mostrarCierreDia = async () => {
     ${warningHtml}
     <div style="background:#f5f3ef;border-radius:10px;padding:14px;margin-bottom:12px">
       <div style="font-size:11px;font-weight:600;color:#888;margin-bottom:10px;text-transform:uppercase">Avance del día</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;gap:8px;text-align:center">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr 1fr;gap:8px;text-align:center">
         <div style="background:#E6F1FB;border-radius:8px;padding:10px">
           <div style="font-size:11px;color:#0C447C;font-weight:600">R0 Interior</div>
           <div style="font-size:24px;font-weight:700;color:#0C447C">+${delta.R0}</div>
@@ -1630,10 +1690,14 @@ window.mostrarCierreDia = async () => {
           <div style="font-size:11px;color:#7a6000;font-weight:600">RF Exterior</div>
           <div style="font-size:24px;font-weight:700;color:#7a6000">+${delta.RFE}</div>
         </div>
+        <div style="background:#E4E4E4;border-radius:8px;padding:10px">
+          <div style="font-size:11px;color:#111;font-weight:600">DOM</div>
+          <div style="font-size:24px;font-weight:700;color:#111">+${delta.DOM}</div>
+        </div>
       </div>
     </div>
     <div style="font-size:11px;color:#aaa;text-align:center">
-      Acumulado total: R0=${actual.R0} · R1F=${actual.R1F} · R1=${actual.R1} · RFF=${actual.RFF} · RF=${actual.RF} · RFE=${actual.RFE}
+      Acumulado total: R0=${actual.R0} · R1F=${actual.R1F} · R1=${actual.R1} · RFF=${actual.RFF} · RF=${actual.RF} · RFE=${actual.RFE} · DOM=${actual.DOM}
     </div>
   `;
 
@@ -1641,7 +1705,7 @@ window.mostrarCierreDia = async () => {
   document.getElementById('btn-confirmar-cierre').textContent = cierreHoy ? 'Reemplazar cierre de hoy' : 'Confirmar cierre';
 
   window._pendingCierre = {
-    delta, acumulado: {R0:actual.R0,R1F:actual.R1F,R1:actual.R1,RFF:actual.RFF,RF:actual.RF,RFE:actual.RFE},
+    delta, acumulado: {R0:actual.R0,R1F:actual.R1F,R1:actual.R1,RFF:actual.RFF,RF:actual.RF,RFE:actual.RFE,DOM:actual.DOM},
     fecha: fechaStr, ts: now.toISOString(),
     reemplazarKey: cierreHoyKey || null
   };
@@ -1711,18 +1775,19 @@ window.verDetalle = () => {
   const div = document.getElementById('detalle-contenido');
   // Contar por tipología y estado
   const counts = {};
-  TIPOLOGIAS.forEach(t => { counts[t.id] = {R0:0,R1F:0,R1:0,RFF:0,RF:0}; });
-  counts['??'] = {R0:0,R1F:0,R1:0,RFF:0,RF:0}; // sin tipología asignada
+  TIPOLOGIAS.forEach(t => { counts[t.id] = {R0:0,R1F:0,R1:0,RFF:0,RF:0,DOM:0}; });
+  counts['??'] = {R0:0,R1F:0,R1:0,RFF:0,RF:0,DOM:0}; // sin tipología asignada
 
   Object.values(houses).forEach(h => {
     const tid = h.tipo || '??';
-    if(!counts[tid]) counts[tid]={R0:0,R1F:0,R1:0,RFF:0,RF:0};
+    if(!counts[tid]) counts[tid]={R0:0,R1F:0,R1:0,RFF:0,RF:0,DOM:0};
     const rank = STATE_RANK[h.state||'ND'];
     if(rank>=1) counts[tid].R0++;
     if(rank>=2) counts[tid].R1F++;
     if(rank>=3) counts[tid].R1++;
     if(rank>=4) counts[tid].RFF++;
     if(rank>=5) counts[tid].RF++;
+    if(h.dom) counts[tid].DOM++; // independiente del estado
   });
 
   // Totales por tipología: contar viviendas que tienen tipo asignado
@@ -1734,7 +1799,7 @@ window.verDetalle = () => {
 
   const mkTable = (stKey, stLabel, col) => {
     const rows = TIPOLOGIAS.map(t => {
-      const c = counts[t.id] || {R0:0,R1F:0,R1:0,RFF:0,RF:0};
+      const c = counts[t.id] || {R0:0,R1F:0,R1:0,RFF:0,RF:0,DOM:0};
       const total = totalesPorTipo[t.id] || 0;
       const llevamos = c[stKey];
       const faltan = Math.max(0, total - llevamos);
@@ -1779,7 +1844,8 @@ window.verDetalle = () => {
     mkTable('R1F','R1 Interior — Fichaje','#00695C') +
     mkTable('R1','R1 Interior — Recibida','#27500A') +
     mkTable('RFF','RF Interior — Fichaje','#6C2A8C') +
-    mkTable('RF','RF Interior — Recibida','#1a1a2e');
+    mkTable('RF','RF Interior — Recibida','#1a1a2e') +
+    mkTable('DOM','DOM','#111111');
 
   document.getElementById('detalle-modal').style.display='flex';
 };
@@ -1837,6 +1903,7 @@ window.verHistorial = async () => {
     { key:'RFF', label:'RF int. (fichaje)',  bg:'#F1E6F8', color:'#6C2A8C', cellColor:'#6C2A8C' },
     { key:'RF',  label:'RF int. (recibida)',  bg:'#1a1a2e', color:'#ffffff', cellColor:'#1a1a2e' },
     { key:'RFE', label:'RF ext. (recibido)',  bg:'#FFF9C4', color:'#7a6000', cellColor:'#7a6000' },
+    { key:'DOM', label:'DOM',  bg:'#E4E4E4', color:'#111', cellColor:'#111' },
   ];
   // Registros de cierre anteriores a "R1 fichaje"/"RF fichaje" no tienen esos campos — se asume que
   // ese avance ocurrió junto con "R1 recibida"/"RF recibida" (antes eran el mismo paso).
@@ -1911,7 +1978,7 @@ window.verHistorial = async () => {
         html += `<td style="padding:4px;border:1px solid #eee"></td>`;
       } else {
         html += `<td style="padding:4px 3px;text-align:center;font-size:9px;color:#aaa;border:1px solid #eee;line-height:1.3">
-          <span>${c.acumulado?.R0??'—'}</span><span style="color:#ddd">/</span><span>${acumVal(c,'R1F')??'—'}</span><span style="color:#ddd">/</span><span>${c.acumulado?.R1??'—'}</span><span style="color:#ddd">/</span><span>${acumVal(c,'RFF')??'—'}</span><span style="color:#ddd">/</span><span>${c.acumulado?.RF??'—'}</span><span style="color:#ddd">/</span><span>${c.acumulado?.RFE??'—'}</span>
+          <span>${c.acumulado?.R0??'—'}</span><span style="color:#ddd">/</span><span>${acumVal(c,'R1F')??'—'}</span><span style="color:#ddd">/</span><span>${c.acumulado?.R1??'—'}</span><span style="color:#ddd">/</span><span>${acumVal(c,'RFF')??'—'}</span><span style="color:#ddd">/</span><span>${c.acumulado?.RF??'—'}</span><span style="color:#ddd">/</span><span>${c.acumulado?.RFE??'—'}</span><span style="color:#ddd">/</span><span>${c.acumulado?.DOM??'—'}</span>
         </td>`;
       }
     });
@@ -1950,11 +2017,11 @@ const _origDraw = draw;
       function _parseFechaAuto(f) { const [d,m,y]=f.split('/'); return new Date(+y,+m-1,+d); }
       const labKeys = keys.filter(k => { const dw=_parseFechaAuto(cierres[k].fecha).getDay(); return dw!==0&&dw!==6; });
       const lastKey = labKeys.length > 0 ? labKeys[labKeys.length-1] : null;
-      const anterior = lastKey ? cierres[lastKey].acumulado : {R0:0,R1F:0,R1:0,RFF:0,RF:0,RFE:0};
+      const anterior = lastKey ? cierres[lastKey].acumulado : {R0:0,R1F:0,R1:0,RFF:0,RF:0,RFE:0,DOM:0};
       const actual = getCounts();
-      const delta = { R0: actual.R0-(anterior.R0||0), R1F: actual.R1F-((anterior.R1F !== undefined ? anterior.R1F : anterior.R1) || 0), R1: actual.R1-(anterior.R1||0), RFF: actual.RFF-((anterior.RFF !== undefined ? anterior.RFF : anterior.RF) || 0), RF: actual.RF-(anterior.RF||0), RFE: actual.RFE-(anterior.RFE||0) };
+      const delta = { R0: actual.R0-(anterior.R0||0), R1F: actual.R1F-((anterior.R1F !== undefined ? anterior.R1F : anterior.R1) || 0), R1: actual.R1-(anterior.R1||0), RFF: actual.RFF-((anterior.RFF !== undefined ? anterior.RFF : anterior.RF) || 0), RF: actual.RF-(anterior.RF||0), RFE: actual.RFE-(anterior.RFE||0), DOM: actual.DOM-(anterior.DOM||0) };
       await fbPush(cierreRef, {
-        delta, acumulado: {R0:actual.R0,R1F:actual.R1F,R1:actual.R1,RFF:actual.RFF,RF:actual.RF,RFE:actual.RFE},
+        delta, acumulado: {R0:actual.R0,R1F:actual.R1F,R1:actual.R1,RFF:actual.RFF,RF:actual.RF,RFE:actual.RFE,DOM:actual.DOM},
         fecha: fechaStr, ts: now.toISOString(), auto: true
       });
       showToast('🔒 Cierre automático del día guardado');
