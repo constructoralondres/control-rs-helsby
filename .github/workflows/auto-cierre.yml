@@ -83,7 +83,10 @@ jobs:
                   return anterior.get('R1') or 0
               if key == 'RFF':
                   return anterior.get('RF') or 0
-              if key == 'RFEF':
+              if key in ('R1EF','R1E','RFEF'):
+                  # Registros antiguos de patios: se hereda del rango siguiente que exista
+                  if 'RFEF' in anterior:
+                      return anterior.get('RFEF') or 0
                   return anterior.get('RFE') or 0
               return 0
 
@@ -101,7 +104,7 @@ jobs:
                   houses = get_json(db + '/' + name + '/v2.json') or {}
                   patios = get_json(db + '/' + name + '/patios.json') or {}
 
-                  actual = {'R0': 0, 'R1F': 0, 'R1': 0, 'RFF': 0, 'RF': 0, 'RFEF': 0, 'RFE': 0, 'DOM': 0}
+                  actual = {'R0': 0, 'R1F': 0, 'R1': 0, 'RFF': 0, 'RF': 0, 'R1EF': 0, 'R1E': 0, 'RFEF': 0, 'RFE': 0, 'DOM': 0}
                   for h in houses.values():
                       rank = STATE_RANK.get(h.get('state', 'ND'), 0)
                       if rank >= 1: actual['R0'] += 1
@@ -110,9 +113,18 @@ jobs:
                       if rank >= 4: actual['RFF'] += 1
                       if rank >= 5: actual['RF'] += 1
                       if h.get('dom'): actual['DOM'] += 1
-                  # RF Exterior: recibida implica fichaje
-                  actual['RFEF'] = sum(1 for p in patios.values() if p.get('rfExtF') or p.get('rfExt'))
-                  actual['RFE'] = sum(1 for p in patios.values() if p.get('rfExt'))
+                  # Patios: cadena acumulativa R1 Ext Fichaje -> R1 Ext Recibido -> RF Ext Fichaje -> RF Ext Recibido
+                  def patio_rank(p):
+                      if p.get('rfExt'):  return 4
+                      if p.get('rfExtF'): return 3
+                      if p.get('r1Ext'):  return 2
+                      if p.get('r1ExtF'): return 1
+                      return 0
+                  rangos = [patio_rank(p) for p in patios.values()]
+                  actual['R1EF'] = sum(1 for r in rangos if r >= 1)
+                  actual['R1E']  = sum(1 for r in rangos if r >= 2)
+                  actual['RFEF'] = sum(1 for r in rangos if r >= 3)
+                  actual['RFE']  = sum(1 for r in rangos if r >= 4)
                   print("  Actual: " + str(actual))
 
                   lab = sorted(
@@ -120,7 +132,7 @@ jobs:
                       key=lambda c: fecha_to_dt(c.get('fecha',''))
                   )
                   anterior = lab[-1].get('acumulado', {}) if lab else {}
-                  delta = {k: actual[k] - prev_val(anterior, k) for k in ['R0','R1F','R1','RFF','RF','RFEF','RFE','DOM']}
+                  delta = {k: actual[k] - prev_val(anterior, k) for k in ['R0','R1F','R1','RFF','RF','R1EF','R1E','RFEF','RFE','DOM']}
                   print("  Delta: " + str(delta))
 
                   result = post_json(db + '/' + name + '/cierres.json', {
