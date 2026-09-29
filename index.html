@@ -61,9 +61,16 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
 #tabs-bar{display:flex;gap:6px;padding:6px 16px 0;background:#fff;border-bottom:1px solid #e0ddd6;flex-shrink:0}
 .tab-btn{padding:7px 16px;border:1px solid #e0ddd6;border-bottom:none;background:#f5f3ef;color:#777;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px 8px 0 0;margin-bottom:-1px}
 .tab-btn.active{background:#fff;color:#1a1a2e;border-color:#e0ddd6;border-bottom:1px solid #fff}
+#ayer-leyenda{
+  display:none; position:absolute; right:12px; top:calc(50% + 56px);
+  z-index:320; width:150px; padding:8px 10px;
+  background:#fff; border:1.5px solid #1a1a2e; border-radius:10px;
+  font-size:10.5px; color:#333; box-shadow:0 3px 10px rgba(0,0,0,.16);
+}
+@media (max-width: 768px){ #ayer-leyenda{ top:auto; bottom:88px; width:134px } }
 #btn-ayer{
   position:absolute; right:12px; top:50%; transform:translateY(-50%);
-  z-index:320; width:78px; padding:12px 6px;
+  z-index:320; width:92px; padding:11px 6px;
   display:flex; flex-direction:column; align-items:center; gap:4px;
   background:#fff; color:#1a1a2e; border:2.5px solid #1a1a2e; border-radius:12px;
   font-size:11px; font-weight:800; line-height:1.25; letter-spacing:.02em;
@@ -404,9 +411,10 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
     <canvas id="overlay" width="1725" height="852" style="cursor: default;"></canvas>
     <!-- Botón Avance de ayer -->
     <button id="btn-ayer" onclick="toggleAyer()" title="Resalta lo que avanzó el último día con movimiento">
-      <span id="btn-ayer-t">AVANCE<br>DE AYER</span>
+      <span id="btn-ayer-t">AVANCES<br>ÚLTIMOS 3<br>DÍAS HÁBILES</span>
       <span id="btn-ayer-n"></span>
     </button>
+    <div id="ayer-leyenda"></div>
     <div id="zoom-ctrl">
       <button onclick="doZoom(1.15)">+</button>
       <button onclick="doZoom(0.87)">−</button>
@@ -730,37 +738,56 @@ const enFase = (k) => RS_FASES[faseRs].keys.includes(k);
 // ── Avance del día anterior ───────────────────────────
 // diaPrevio = el último día CON avance anterior a hoy. Cada día que pasa,
 // la estrella se corre sola al día con avance más reciente que ya no es hoy.
-let diaPrevio = null;
-function calcDiaPrevio(){
-  const hoy = getTodayISO();
-  let max = null;
-  const ver = d => { if (d && d < hoy && (!max || d > max)) max = d; };
-  Object.values(houses).forEach(h => {
-    if (h.rankDates) RANK_KEYS.forEach(k => ver(h.rankDates[k]));
-    else ver(h.stateDate);
-    ver(h.domDate);
-    PRUEBA_KEYS.forEach(k => ver(h[PRUEBAS[k].fecha]));
-  });
-  Object.values(patios).forEach(p => {
-    PATIO_RANK_KEYS.forEach(k => ver(p[PATIO_FIELDS[k][1]]));
-  });
-  diaPrevio = max;
+const FERIADOS = new Set([
+  '2026-01-01','2026-01-02','2026-04-03','2026-04-04',
+  '2026-05-01','2026-05-21','2026-06-21','2026-06-29',
+  '2026-07-16','2026-08-15','2026-09-18','2026-09-19',
+  '2026-10-12','2026-10-31','2026-11-01','2026-12-08','2026-12-25'
+]);
+const DIAS_VENTANA = 3;
+// Los últimos 3 días hábiles ANTERIORES a hoy, del más reciente al más antiguo.
+// La ventana se corre sola: cada día entra uno nuevo y sale el más viejo.
+let diasPrevios = [];
+function calcDiasPrevios(){
+  const fmt = dt => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  const d = new Date(getTodayISO() + 'T12:00:00');
+  const out = [];
+  let guard = 0;
+  while (out.length < DIAS_VENTANA && guard++ < 40){
+    d.setDate(d.getDate() - 1);
+    const dow = d.getDay();
+    if (dow === 0 || dow === 6) continue;   // fin de semana
+    const iso = fmt(d);
+    if (FERIADOS.has(iso)) continue;        // feriado
+    out.push(iso);
+  }
+  diasPrevios = out;
 }
-// ¿Este polígono avanzó el día previo, en lo que muestra la pestaña actual?
-function marcadoDiaPrevio(o, tipo){
-  if (!diaPrevio) return false;
-  if (vista === 'pruebas') return o[PRUEBAS[prueba].fecha] === diaPrevio;
-  if (vista !== 'rs') return false;
-  if (faseRs === 'DOM') return o.domDate === diaPrevio;
-  if (tipo === 'patio') return RS_FASES[faseRs].keys.some(k => PATIO_FIELDS[k] && o[PATIO_FIELDS[k][1]] === diaPrevio);
-  const rd = o.rankDates || {};
-  return RS_FASES[faseRs].keys.some(k => rd[k] === diaPrevio);
+// ¿En qué día de la ventana avanzó este polígono? 0 = el más reciente, -1 = ninguno.
+// Solo mira lo que muestra la pestaña / sub-pestaña activa.
+function nivelPrevio(o, tipo){
+  if (!diasPrevios.length) return -1;
+  let fechas;
+  if (vista === 'pruebas') fechas = [o[PRUEBAS[prueba].fecha]];
+  else if (vista !== 'rs') return -1;
+  else if (faseRs === 'DOM') fechas = [o.domDate];
+  else if (tipo === 'patio') fechas = RS_FASES[faseRs].keys.filter(k => PATIO_FIELDS[k]).map(k => o[PATIO_FIELDS[k][1]]);
+  else { const rd = o.rankDates || {}; fechas = RS_FASES[faseRs].keys.map(k => rd[k]); }
+  let mejor = -1;
+  fechas.forEach(f => { const i = diasPrevios.indexOf(f); if (i >= 0 && (mejor < 0 || i < mejor)) mejor = i; });
+  return mejor;
 }
 // ── Resaltado "Avance de ayer": contorno negro grueso animado ──
 let mostrarAyer = false;      // solo se activa con el botón
-let _ayerAnim = null, _ayerFase = 0, _ayerConteo = 0;
+let _ayerAnim = null, _ayerFase = 0, _ayerConteo = [0,0,0];
 
-function drawContornoAyer(pts){
+const AYER_ESTILO = [
+  { w:6.5, a:1.00, dash:[15,10] },   // día más reciente
+  { w:5.0, a:0.72, dash:[10,8]  },
+  { w:3.8, a:0.48, dash:[6,7]   },   // día más antiguo de la ventana
+];
+function drawContornoAyer(pts, nivel){
+  const est = AYER_ESTILO[Math.max(0, Math.min(2, nivel||0))];
   ctx.save();
   const trazo = () => {
     ctx.beginPath();
@@ -770,14 +797,14 @@ function drawContornoAyer(pts){
   ctx.lineJoin = 'round';
   // base blanca para despegar el contorno del plano
   trazo();
-  ctx.strokeStyle = 'rgba(255,255,255,0.95)';
-  ctx.lineWidth = Math.max(8, 10*scale);
+  ctx.strokeStyle = 'rgba(255,255,255,' + (0.5 + est.a*0.45) + ')';
+  ctx.lineWidth = Math.max(est.w + 3.5, (est.w + 3.5)*scale);
   ctx.stroke();
-  // línea negra gruesa que "corre" alrededor del polígono
+  // línea negra que "corre" alrededor del polígono
   trazo();
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = Math.max(4.5, 6*scale);
-  ctx.setLineDash([15, 10]);
+  ctx.strokeStyle = 'rgba(0,0,0,' + est.a + ')';
+  ctx.lineWidth = Math.max(est.w*0.75, est.w*scale);
+  ctx.setLineDash(est.dash);
   ctx.lineDashOffset = -_ayerFase;
   ctx.stroke();
   ctx.setLineDash([]);
@@ -802,19 +829,32 @@ function apagarAyer(){
   if (_ayerAnim) { clearInterval(_ayerAnim); _ayerAnim = null; }
   const b = document.getElementById('btn-ayer');
   if (b) b.classList.remove('on');
+  const ley = document.getElementById('ayer-leyenda');
+  if (ley) ley.style.display = 'none';
 }
 function actualizarBtnAyer(){
   const b = document.getElementById('btn-ayer');
   const n = document.getElementById('btn-ayer-n');
   if (!b || !n) return;
-  b.classList.toggle('vacio', !_ayerConteo);
-  n.textContent = diaPrevio ? `${_ayerConteo} · ${fmtDiaPrevio()}` : 'sin registros';
+  const total = _ayerConteo.reduce((a,x)=>a+x, 0);
+  b.classList.toggle('vacio', !total);
+  n.textContent = total ? `${total} marcadas` : 'sin avance';
+  const ley = document.getElementById('ayer-leyenda');
+  if (!ley) return;
+  if (!mostrarAyer){ ley.style.display = 'none'; return; }
+  ley.style.display = 'block';
+  ley.innerHTML = diasPrevios.map((d,i) => {
+    const est = AYER_ESTILO[i];
+    return `<div style="display:flex;align-items:center;gap:6px;margin:3px 0">
+      <svg width="24" height="8" style="flex-shrink:0"><line x1="1" y1="4" x2="23" y2="4"
+        stroke="rgba(0,0,0,${est.a})" stroke-width="${Math.min(5,est.w*0.7)}" stroke-dasharray="${est.dash.join(',')}"/></svg>
+      <span style="flex:1">${nombreDia(d)} ${fmtFechaCorta(d)}</span>
+      <strong>${_ayerConteo[i]||0}</strong></div>`;
+  }).join('');
 }
-function fmtDiaPrevio(){
-  if (!diaPrevio) return '';
-  const [y,m,d] = diaPrevio.split('-');
-  return `${d}-${m}-${y}`;
-}
+const _DIAS_SEM = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+function nombreDia(iso){ return _DIAS_SEM[new Date(iso+'T12:00:00').getDay()]; }
+function fmtFechaCorta(iso){ const [y,m,d]=iso.split('-'); return `${d}-${m}`; }
 // ¿Se dibuja este estado? Debe estar en la sub-pestaña activa y con su filtro encendido.
 const verEstado = (k) => enFase(k) && filters.has(k);
 let faseEq = 'R1I';        // fase activa en la vista Equipos
@@ -1064,8 +1104,8 @@ function updateEqStats(){
 
 // ── Draw de la vista Pruebas ──────────────────────────
 function drawPruebas() {
-  calcDiaPrevio();
-  let _nPrevio = 0;
+  calcDiasPrevios();
+  const _nPrevio = [0,0,0];
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const cfg = PRUEBAS[prueba];
 
@@ -1126,7 +1166,8 @@ function drawPruebas() {
       }
     }
     // ⭐ avance del día anterior
-    if (marcadoDiaPrevio(h)) { _nPrevio++; if (mostrarAyer) drawContornoAyer(pts); }
+    const _niv = nivelPrevio(h);
+    if (_niv >= 0) { _nPrevio[_niv]++; if (mostrarAyer) drawContornoAyer(pts, _niv); }
   });
   _ayerConteo = _nPrevio; actualizarBtnAyer();
   updatePrStats();
@@ -1379,8 +1420,8 @@ function showEqCtxMenu(mx,my,o,tipo){
 function draw() {
   if (vista === 'equipos') { drawEquipos(); return; }
   if (vista === 'pruebas') { drawPruebas(); return; }
-  calcDiaPrevio();
-  let _nPrevio = 0;
+  calcDiasPrevios();
+  const _nPrevio = [0,0,0];
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   Object.values(houses).forEach(h => {
@@ -1580,8 +1621,9 @@ function draw() {
       ctx.stroke();
       ctx.setLineDash([]);
     }
-    // Avance de ayer
-    if (marcadoDiaPrevio(h)) { _nPrevio++; if (mostrarAyer) drawContornoAyer(pts); }
+    // Avance de los últimos días hábiles
+    const _niv = nivelPrevio(h);
+    if (_niv >= 0) { _nPrevio[_niv]++; if (mostrarAyer) drawContornoAyer(pts, _niv); }
   });
 
   // Dibujo en curso (modo admin)
@@ -1691,7 +1733,8 @@ function draw() {
         ctx.setLineDash([]);
       }
       // ⭐ avance del día anterior
-      if (marcadoDiaPrevio(p, 'patio')) { _nPrevio++; if (mostrarAyer) drawContornoAyer(ppts); }
+      const _nivP = nivelPrevio(p, 'patio');
+      if (_nivP >= 0) { _nPrevio[_nivP]++; if (mostrarAyer) drawContornoAyer(ppts, _nivP); }
     });
   }
   _ayerConteo = _nPrevio; actualizarBtnAyer();
