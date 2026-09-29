@@ -67,7 +67,9 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
   background:#fff; border:1.5px solid #1a1a2e; border-radius:10px;
   font-size:10.5px; color:#333; box-shadow:0 3px 10px rgba(0,0,0,.16);
 }
-@media (max-width: 768px){ #ayer-leyenda{ top:auto; bottom:88px; width:134px } }
+@media (max-width: 768px){
+  #ayer-leyenda{ top:46px; right:8px; bottom:auto; width:162px; font-size:11px; padding:8px 10px }
+}
 #btn-ayer{
   position:absolute; right:12px; top:50%; transform:translateY(-50%);
   z-index:320; width:92px; padding:11px 6px;
@@ -80,7 +82,18 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
 #btn-ayer.on{background:#1a1a2e;color:#fff;box-shadow:0 0 0 4px rgba(26,26,46,.18)}
 #btn-ayer #btn-ayer-n{font-size:10px;font-weight:600;opacity:.75;white-space:nowrap}
 #btn-ayer.vacio{opacity:.45}
-@media (max-width: 768px){ #btn-ayer{ top:auto; bottom:150px; transform:none; width:66px; padding:9px 5px; font-size:10px } }
+#btn-ayer .ay-corto{display:none}
+@media (max-width: 768px){
+  #btn-ayer{
+    top:8px; right:8px; bottom:auto; transform:none;
+    width:auto; max-width:calc(100vw - 20px);
+    flex-direction:row; align-items:center; gap:8px;
+    padding:8px 13px; font-size:11.5px; border-radius:22px; white-space:nowrap;
+  }
+  #btn-ayer .ay-full{display:none}
+  #btn-ayer .ay-corto{display:inline}
+  #btn-ayer #btn-ayer-n{font-size:11px}
+}
 #fases-bar,#pruebas-bar,#rs-fases-bar{display:flex;align-items:center;gap:6px;padding:7px 16px;background:#fff;border-bottom:1px solid #e0ddd6;flex-shrink:0;overflow-x:auto;white-space:nowrap}
 .fase-btn{padding:5px 12px;border:1px solid #ddd;background:#fff;color:#555;font-size:12px;cursor:pointer;border-radius:20px;flex-shrink:0}
 .fase-btn.active{background:#1a1a2e;color:#fff;border-color:#1a1a2e;font-weight:600}
@@ -411,7 +424,7 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
     <canvas id="overlay" width="1725" height="852" style="cursor: default;"></canvas>
     <!-- Botón Avance de ayer -->
     <button id="btn-ayer" onclick="toggleAyer()" title="Resalta lo que avanzó el último día con movimiento">
-      <span id="btn-ayer-t">AVANCES<br>ÚLTIMOS 3<br>DÍAS HÁBILES</span>
+      <span id="btn-ayer-t"><span class="ay-full">AVANCES<br>ÚLTIMOS 3<br>DÍAS HÁBILES</span><span class="ay-corto">📅 Últimos 3 días hábiles</span></span>
       <span id="btn-ayer-n"></span>
     </button>
     <div id="ayer-leyenda"></div>
