@@ -1743,10 +1743,15 @@ canvas.addEventListener('contextmenu', e=>{
     return;
   }
   if(!isAdmin && !isTerreno) return;
+  // En sub-pestañas exteriores se marcan patios; en las demás, viviendas
+  const esExt = (faseRs === 'R1E' || faseRs === 'RFE');
+  if (esExt){
+    const p=hitTestPatio(cx,cy);
+    if(p){ showPatioCtxMenu(e.clientX,e.clientY,p); }
+    return;
+  }
   const h=hitTest(cx,cy);
-  if(h){ showCtxMenu(e.clientX,e.clientY,h); return; }
-  const p=hitTestPatio(cx,cy);
-  if(p && (isAdmin||isTerreno)){ showPatioCtxMenu(e.clientX,e.clientY,p); }
+  if(h){ showCtxMenu(e.clientX,e.clientY,h); }
 });
 
 canvas.addEventListener('mousedown', e=>{
@@ -2442,8 +2447,9 @@ canvas.addEventListener('touchstart', e => {
         const r = canvas.getBoundingClientRect();
         const cx = t.clientX - r.left;
         const cy = t.clientY - r.top;
-        const h = hitTest(cx, cy);
-        const p = hitTestPatio(cx, cy);
+        const esExt = (faseRs === 'R1E' || faseRs === 'RFE');
+        const h = esExt ? null : hitTest(cx, cy);
+        const p = esExt ? hitTestPatio(cx, cy) : null;
         if (h) {
           navigator.vibrate && navigator.vibrate(40);
           showMobileMenu(t.clientX, t.clientY, h);
