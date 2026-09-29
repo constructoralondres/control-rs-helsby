@@ -203,6 +203,7 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
   <button class="fase-btn" id="rsf-RFI" onclick="setFaseRs('RFI')">RF Interior</button>
   <button class="fase-btn" id="rsf-R1E" onclick="setFaseRs('R1E')">R1 Exterior</button>
   <button class="fase-btn" id="rsf-RFE" onclick="setFaseRs('RFE')">RF Exterior</button>
+  <button class="fase-btn" id="rsf-DOM" onclick="setFaseRs('DOM')">🏛 DOM</button>
 </div>
 <!-- Selector de fase (solo en la vista Equipos) -->
 <div id="fases-bar" style="display:none">
@@ -225,6 +226,7 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
   <div id="sidebar">
     <div id="panel-rs">
     <div class="stitle">Resumen — <span id="rs-fase-nombre">R1 Interior</span></div>
+    <div id="rs-previo" style="display:none;align-items:center;gap:7px;font-size:11px;color:#c0392b;background:#FFF0F0;border-radius:7px;padding:5px 8px"></div>
     <div style="display:flex;flex-direction:column;gap:5px">
       <div class="stat-row"><span style="color:#666;font-size:12px">Total viviendas</span><strong id="s-total">211</strong></div>
       <div class="stat-row" data-k="R0"><span class="badge b-r0">R0 Interior</span><strong id="s-r0">73</strong></div>
@@ -364,6 +366,7 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
       <div id="pr-todas" style="display:flex;flex-direction:column;gap:5px"></div>
       <div style="height:1px;background:#eee"></div>
       <div class="stitle">Simbología</div>
+      <div id="pr-previo" style="display:none;align-items:center;gap:7px;font-size:11px;color:#c0392b;background:#FFF0F0;border-radius:7px;padding:5px 8px"></div>
       <div id="pr-simbologia" style="display:flex;flex-direction:column;gap:5px;font-size:11px;color:#555"></div>
       <div id="pr-ayuda" style="font-size:11px;color:#aaa;line-height:1.4"></div>
     </div>
@@ -541,7 +544,7 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
 <div id="detalle-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:4000;display:none;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:14px;padding:22px;width:420px;max-width:97vw;max-height:90vh;overflow-y:auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <h2 style="font-size:15px;font-weight:700;color:#1a1a2e">📊 Detalle por tipología</h2>
+      <h2 id="detalle-titulo" style="font-size:15px;font-weight:700;color:#1a1a2e">📊 Detalle por tipología</h2>
       <button onclick="document.getElementById(&#39;detalle-modal&#39;).style.display=&#39;none&#39;" style="border:none;background:none;font-size:18px;cursor:pointer;color:#888">✕</button>
     </div>
     <div id="detalle-contenido"></div>
@@ -704,14 +707,82 @@ let vista = 'rs';          // 'rs' | 'equipos' | 'pruebas'
 // Cada fase muestra solo sus estados en el plano, el resumen y los filtros.
 let faseRs = 'R1I';
 const RS_FASES = {
-  R1I: { label:'R1 Interior', keys:['R0','R1F','R1'] },
-  RFI: { label:'RF Interior', keys:['RFF','RF'] },
+  R1I: { label:'R1 Interior', keys:['R0','R1F','R1','ND'] },
+  RFI: { label:'RF Interior', keys:['RFF','RF','ND'] },
   R1E: { label:'R1 Exterior', keys:['R1EF','R1E'] },
   RFE: { label:'RF Exterior', keys:['RFEF','RFE'] },
+  DOM: { label:'DOM',         keys:['DOM'] },
 };
-const RS_FASE_KEYS = ['R1I','RFI','R1E','RFE'];
-const RS_SIEMPRE = ['DOM','ND'];   // visibles en todas las sub-pestañas
-const enFase = (k) => RS_SIEMPRE.includes(k) || RS_FASES[faseRs].keys.includes(k);
+const RS_FASE_KEYS = ['R1I','RFI','R1E','RFE','DOM'];
+const enFase = (k) => RS_FASES[faseRs].keys.includes(k);
+
+// ── Avance del día anterior ───────────────────────────
+// diaPrevio = el último día CON avance anterior a hoy. Cada día que pasa,
+// la estrella se corre sola al día con avance más reciente que ya no es hoy.
+let diaPrevio = null;
+function calcDiaPrevio(){
+  const hoy = getTodayISO();
+  let max = null;
+  const ver = d => { if (d && d < hoy && (!max || d > max)) max = d; };
+  Object.values(houses).forEach(h => {
+    if (h.rankDates) RANK_KEYS.forEach(k => ver(h.rankDates[k]));
+    else ver(h.stateDate);
+    ver(h.domDate);
+    PRUEBA_KEYS.forEach(k => ver(h[PRUEBAS[k].fecha]));
+  });
+  Object.values(patios).forEach(p => {
+    PATIO_RANK_KEYS.forEach(k => ver(p[PATIO_FIELDS[k][1]]));
+  });
+  diaPrevio = max;
+}
+// ¿Este polígono avanzó el día previo, en lo que muestra la pestaña actual?
+function marcadoDiaPrevio(o, tipo){
+  if (!diaPrevio) return false;
+  if (vista === 'pruebas') return o[PRUEBAS[prueba].fecha] === diaPrevio;
+  if (vista !== 'rs') return false;
+  if (faseRs === 'DOM') return o.domDate === diaPrevio;
+  if (tipo === 'patio') return RS_FASES[faseRs].keys.some(k => PATIO_FIELDS[k] && o[PATIO_FIELDS[k][1]] === diaPrevio);
+  const rd = o.rankDates || {};
+  return RS_FASES[faseRs].keys.some(k => rd[k] === diaPrevio);
+}
+// Estrella en la esquina superior derecha del polígono
+function drawEstrellaPrevio(pts){
+  const x = Math.max(...pts.map(p=>p.x)), y = Math.min(...pts.map(p=>p.y));
+  const r = Math.max(5, Math.min(9, 9*scale));
+  const cx = x - r*0.5, cy = y + r*0.5;
+  ctx.save();
+  ctx.beginPath();
+  for (let i=0;i<10;i++){
+    const ang = -Math.PI/2 + i*Math.PI/5;
+    const rad = i%2 ? r*0.45 : r;
+    const px = cx + Math.cos(ang)*rad, py = cy + Math.sin(ang)*rad;
+    i===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+  }
+  ctx.closePath();
+  ctx.fillStyle = '#FF1744';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.4;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  ctx.restore();
+}
+// Pinta la leyenda "avance del <fecha>" con el conteo de polígonos con estrella
+function pintarLeyendaPrevio(id, n){
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (!diaPrevio || !n){ el.style.display='none'; return; }
+  el.style.display='flex';
+  el.innerHTML = `<svg width="14" height="14" viewBox="-10 -10 20 20" style="flex-shrink:0">
+    <path d="M0 -9 L2.6 -2.8 L9 -2.8 L3.8 1.1 L5.8 7.3 L0 3.5 L-5.8 7.3 L-3.8 1.1 L-9 -2.8 L-2.6 -2.8 Z"
+      fill="#FF1744" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/></svg>
+    <span><strong>${n}</strong> marcadas el ${fmtDiaPrevio()}</span>`;
+}
+function fmtDiaPrevio(){
+  if (!diaPrevio) return '';
+  const [y,m,d] = diaPrevio.split('-');
+  return `${d}-${m}-${y}`;
+}
 // ¿Se dibuja este estado? Debe estar en la sub-pestaña activa y con su filtro encendido.
 const verEstado = (k) => enFase(k) && filters.has(k);
 let faseEq = 'R1I';        // fase activa en la vista Equipos
@@ -961,6 +1032,8 @@ function updateEqStats(){
 
 // ── Draw de la vista Pruebas ──────────────────────────
 function drawPruebas() {
+  calcDiaPrevio();
+  let _nPrevio = 0;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const cfg = PRUEBAS[prueba];
 
@@ -1020,7 +1093,10 @@ function drawPruebas() {
         ctx.fillText(h.num, cx, cy);
       }
     }
+    // ⭐ avance del día anterior
+    if (marcadoDiaPrevio(h)) { drawEstrellaPrevio(pts); _nPrevio++; }
   });
+  pintarLeyendaPrevio('pr-previo', _nPrevio);
   updatePrStats();
 }
 
@@ -1265,6 +1341,8 @@ function showEqCtxMenu(mx,my,o,tipo){
 function draw() {
   if (vista === 'equipos') { drawEquipos(); return; }
   if (vista === 'pruebas') { drawPruebas(); return; }
+  calcDiaPrevio();
+  let _nPrevio = 0;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   Object.values(houses).forEach(h => {
@@ -1464,7 +1542,10 @@ function draw() {
       ctx.stroke();
       ctx.setLineDash([]);
     }
+    // ⭐ avance del día anterior
+    if (marcadoDiaPrevio(h)) { drawEstrellaPrevio(pts); _nPrevio++; }
   });
+  pintarLeyendaPrevio('rs-previo', _nPrevio);
 
   // Dibujo en curso (modo admin)
   if (drawPts.length > 0) {
@@ -1572,6 +1653,8 @@ function draw() {
         ctx.stroke();
         ctx.setLineDash([]);
       }
+      // ⭐ avance del día anterior
+      if (marcadoDiaPrevio(p, 'patio')) { drawEstrellaPrevio(ppts); _nPrevio++; pintarLeyendaPrevio('rs-previo', _nPrevio); }
     });
   }
   updateStats();
@@ -1885,10 +1968,13 @@ function computeRankDatesForLower(h, targetRank) {
 function showCtxMenu(mx,my,h){
   ctxMenu.innerHTML='';
   const ttl=document.createElement('div'); ttl.className='ctx-ttl';
-  ttl.textContent=`Vivienda ${h.num||'?'}`;
+  ttl.textContent=`Vivienda ${h.num||'?'} — ${RS_FASES[faseRs].label}`;
   ctxMenu.appendChild(ttl);
   const locked = isLockedForTerreno(h);
-  [['R0','🔵 Marcar R0'],['R1F','📝 Marcar R1 Interior Fichaje'],['R1','🟢 Marcar R1 Interior Recibida'],['RFF','📝 Marcar RF Interior Fichaje'],['RF','✅ Marcar RF Interior Recibida']].forEach(([st,label])=>{
+  const enDom = (faseRs === 'DOM');
+  // Solo se puede marcar lo que corresponde a la sub-pestaña activa
+  [['R0','🔵 Marcar R0'],['R1F','📝 Marcar R1 Interior Fichaje'],['R1','🟢 Marcar R1 Interior Recibida'],['RFF','📝 Marcar RF Interior Fichaje'],['RF','✅ Marcar RF Interior Recibida']]
+   .filter(([st]) => enFase(st)).forEach(([st,label])=>{
     const b=document.createElement('button');
     const targetRank = STATE_RANK[st];
     const curRank = STATE_RANK[h.state||'ND'];
@@ -1907,8 +1993,9 @@ function showCtxMenu(mx,my,h){
     }
     ctxMenu.appendChild(b);
   });
-  const sep0=document.createElement('div'); sep0.className='sep'; ctxMenu.appendChild(sep0);
+  const sep0=document.createElement('div'); sep0.className='sep';
   const bclear=document.createElement('button');
+  if(!enDom){ ctxMenu.appendChild(sep0); }
   if(locked){
     bclear.textContent='🔒 Bloqueado (cierre de día registrado)';
     bclear.style.color='#bbb';
@@ -1920,9 +2007,10 @@ function showCtxMenu(mx,my,h){
     bclear.style.color='#888';
     bclear.onclick=()=>{ update(ref(db,'helsby/v2/'+h.id),{state:'ND',stateDate:null,rankDates:null}); ctxMenu.style.display='none'; };
   }
-  ctxMenu.appendChild(bclear);
-  // ── DOM: marca independiente del estado (mismo bloqueo por cierre de día) ──
-  const sepDom=document.createElement('div'); sepDom.className='sep'; ctxMenu.appendChild(sepDom);
+  if(!enDom){ ctxMenu.appendChild(bclear); }
+  // ── DOM: solo en su propia sub-pestaña ──
+  const sepDom=document.createElement('div'); sepDom.className='sep';
+  if(enDom){
   const hoyDom = getTodayISO();
   const domLocked = isTerreno && lastCierreDate && h.domDate && h.domDate < hoyDom && h.domDate <= lastCierreDate;
   const bdom=document.createElement('button');
@@ -1941,6 +2029,12 @@ function showCtxMenu(mx,my,h){
     bdom.onclick=()=>{ update(ref(db,'helsby/v2/'+h.id),{dom:true,domDate:getTodayISO()}); ctxMenu.style.display='none'; };
   }
   ctxMenu.appendChild(bdom);
+  }
+  // Recordatorio de dónde se marca el resto
+  const nota=document.createElement('div');
+  nota.style.cssText='padding:5px 10px 6px;font-size:10px;color:#bbb';
+  nota.textContent='Cambia de sub-pestaña para marcar los demás estados';
+  ctxMenu.appendChild(nota);
   if(isAdmin){
     const s=document.createElement('div'); s.className='sep'; ctxMenu.appendChild(s);
     // Asignar tipología
@@ -2153,7 +2247,7 @@ function hitTestPatio(cx,cy){
 function showPatioCtxMenu(mx,my,p){
   ctxMenu.innerHTML='';
   const ttl=document.createElement('div'); ttl.className='ctx-ttl';
-  ttl.textContent='Patio — R Exterior';
+  ttl.textContent='Patio — ' + RS_FASES[faseRs].label;
   ctxMenu.appendChild(ttl);
   const today = getTodayISO();
   const curRank = patioRank(p);
@@ -2189,7 +2283,7 @@ function showPatioCtxMenu(mx,my,p){
   [['R1EF','🟠 Marcar R1 Ext Fichaje'],
    ['R1E','🟠 Marcar R1 Ext Recibido'],
    ['RFEF','🟡 Marcar RF Ext Fichaje'],
-   ['RFE','✅ Marcar RF Ext Recibido']].forEach(([k,label])=>{
+   ['RFE','✅ Marcar RF Ext Recibido']].filter(([k]) => enFase(k)).forEach(([k,label])=>{
     const b=document.createElement('button');
     const target = PATIO_RANK_OF[k];
     const isDisabled = target < curRank && !canLowerPatio(target);
@@ -2773,7 +2867,12 @@ window.verDetalle = () => {
       </div>`;
   };
 
-  div.innerHTML =
+  const esPr = (vista === 'pruebas');
+  const dtit = document.getElementById('detalle-titulo');
+  if (dtit) dtit.textContent = esPr ? '🧪 Detalle de pruebas por tipología' : '📊 Detalle de Rs por tipología';
+  div.innerHTML = esPr
+    ? PRUEBA_KEYS.map(k => mkTable(k, PRUEBAS[k].label, PRUEBAS[k].col)).join('')
+    :
     mkTable('R0','R0 Interior — Revisión 0','#0C447C') +
     mkTable('R1F','R1 Interior — Fichaje','#00695C') +
     mkTable('R1','R1 Interior — Recibida','#27500A') +
@@ -2783,8 +2882,7 @@ window.verDetalle = () => {
     mkTable('R1E','R1 Exterior — Recibido','#8a7000') +
     mkTable('RFEF','RF Exterior — Fichaje','#7a6000') +
     mkTable('RFE','RF Exterior — Recibido','#5C4A00') +
-    mkTable('DOM','DOM','#111111') +
-    PRUEBA_KEYS.map(k => mkTable(k, PRUEBAS[k].label, PRUEBAS[k].col)).join('');
+    mkTable('DOM','DOM','#111111');
 
   document.getElementById('detalle-modal').style.display='flex';
 };
