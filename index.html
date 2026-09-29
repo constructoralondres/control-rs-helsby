@@ -62,7 +62,7 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
 #tabs-bar{display:flex;gap:6px;padding:6px 16px 0;background:#fff;border-bottom:1px solid #e0ddd6;flex-shrink:0}
 .tab-btn{padding:7px 16px;border:1px solid #e0ddd6;border-bottom:none;background:#f5f3ef;color:#777;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px 8px 0 0;margin-bottom:-1px}
 .tab-btn.active{background:#fff;color:#1a1a2e;border-color:#e0ddd6;border-bottom:1px solid #fff}
-#fases-bar{display:flex;align-items:center;gap:6px;padding:7px 16px;background:#fff;border-bottom:1px solid #e0ddd6;flex-shrink:0;overflow-x:auto;white-space:nowrap}
+#fases-bar,#pruebas-bar{display:flex;align-items:center;gap:6px;padding:7px 16px;background:#fff;border-bottom:1px solid #e0ddd6;flex-shrink:0;overflow-x:auto;white-space:nowrap}
 .fase-btn{padding:5px 12px;border:1px solid #ddd;background:#fff;color:#555;font-size:12px;cursor:pointer;border-radius:20px;flex-shrink:0}
 .fase-btn.active{background:#1a1a2e;color:#fff;border-color:#1a1a2e;font-weight:600}
 .eq-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#333}
@@ -193,6 +193,7 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
 <div id="tabs-bar">
   <button id="tab-rs" class="tab-btn active" onclick="setVista('rs')">📋 Control de Rs</button>
   <button id="tab-eq" class="tab-btn" onclick="setVista('equipos')">👷 Equipos</button>
+  <button id="tab-pr" class="tab-btn" onclick="setVista('pruebas')">🧪 Pruebas</button>
 </div>
 <!-- Selector de fase (solo en la vista Equipos) -->
 <div id="fases-bar" style="display:none">
@@ -201,6 +202,14 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
   <button class="fase-btn" id="fase-RFI" onclick="setFaseEq('RFI')">RF Interior</button>
   <button class="fase-btn" id="fase-R1E" onclick="setFaseEq('R1E')">R1 Exterior</button>
   <button class="fase-btn" id="fase-RFE" onclick="setFaseEq('RFE')">RF Exterior</button>
+</div>
+<!-- Selector de prueba (solo en la vista Pruebas) -->
+<div id="pruebas-bar" style="display:none">
+  <span style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;margin-right:4px">Prueba</span>
+  <button class="fase-btn active" id="pr-PP"  onclick="setPrueba('PP')">💧 Presión</button>
+  <button class="fase-btn" id="pr-PE"  onclick="setPrueba('PE')">🌧 Escorrentía</button>
+  <button class="fase-btn" id="pr-PG"  onclick="setPrueba('PG')">🔥 Gas</button>
+  <button class="fase-btn" id="pr-PEL" onclick="setPrueba('PEL')">⚡ Eléctricas</button>
 </div>
 
 <div id="main">
@@ -337,6 +346,28 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
       <div id="eq-ayuda" style="font-size:11px;color:#aaa;line-height:1.4"></div>
     </div>
 
+    <!-- Panel de la vista Pruebas -->
+    <div id="panel-pr" style="display:none;flex-direction:column;gap:10px">
+      <div class="stitle">Pruebas — <span id="pr-nombre">Prueba de presión</span></div>
+      <div id="pr-resumen" style="display:flex;flex-direction:column;gap:5px"></div>
+      <div style="height:1px;background:#eee"></div>
+      <div class="stitle">Todas las pruebas</div>
+      <div id="pr-todas" style="display:flex;flex-direction:column;gap:5px"></div>
+      <div style="height:1px;background:#eee"></div>
+      <div class="stitle">Simbología</div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:11px;color:#555">
+        <div style="display:flex;align-items:center;gap:8px">
+          <svg width="28" height="18"><rect x="2" y="2" width="24" height="14" fill="rgba(0,150,136,0.45)" stroke="#00897B" stroke-width="2.5"></rect></svg>
+          Prueba realizada
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <svg width="28" height="18"><rect x="2" y="2" width="24" height="14" fill="none" stroke="#bbb" stroke-width="1.3" stroke-dasharray="4,4"></rect></svg>
+          Pendiente
+        </div>
+      </div>
+      <div id="pr-ayuda" style="font-size:11px;color:#aaa;line-height:1.4"></div>
+    </div>
+
     <div style="height:1px;background:#eee"></div>
     <div class="stitle">Acceso</div>
     <button class="mbtn" id="btn-acceso" onclick="requestAcceso()">🔐 Ingresar</button>
@@ -466,6 +497,8 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
     <button type="button" class="mob-stat mob-chip" id="msc-dom" onclick="toggleMobileFilter('DOM')" style="background:#E4E4E4;color:#111111"><span>DOM</span><strong id="ms-dom">0</strong></button>
     <button type="button" class="mob-stat mob-chip" id="msc-nd" onclick="toggleMobileFilter('ND')" style="background:#F1EFE8;color:#5F5E5A"><span>S/D</span><strong id="ms-nd">0</strong></button>
   </div>
+  <!-- Selector + contador de pruebas (solo vista Pruebas, móvil) -->
+  <div id="mobile-pruebas" style="display:none;flex-wrap:wrap;gap:5px;padding:7px 8px;border-bottom:1px solid #f0ede6"></div>
   <div id="mobile-perfil-bar" style="display:none;padding:4px 12px;font-size:11px;font-weight:600;color:#fff;text-align:center"></div>
   <div id="mobile-house-label">Mantén presionada una vivienda para marcar su estado</div>
   <div id="mobile-actions" style="flex-wrap:wrap;gap:6px;padding:6px 12px 10px">
@@ -665,7 +698,7 @@ function toC(x,y){ return {x:x*scale+offX, y:y*scale+offY}; }
 function toM(x,y){ return {x:(x-offX)/scale, y:(y-offY)/scale}; }
 
 // ── Vista Equipos ─────────────────────────────────────
-let vista = 'rs';          // 'rs' | 'equipos'
+let vista = 'rs';          // 'rs' | 'equipos' | 'pruebas'
 let faseEq = 'R1I';        // fase activa en la vista Equipos
 let equipos = {};          // equipos[fase][idPoligono] = {eq, st, date}
 const EQ_FASES = {
@@ -687,6 +720,26 @@ const eqColor = (n) => EQ_COLORES[(n-1) % EQ_COLORES.length];
 function eqRgba(hex, a){
   const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
   return `rgba(${r},${g},${b},${a})`;
+}
+
+// ── Vista Pruebas ─────────────────────────────────────
+// 4 pruebas independientes entre sí, marcadas sobre la vivienda.
+let prueba = 'PP';
+const PRUEBAS = {
+  PP:  { label:'Prueba de presión',  corto:'Presión',     campo:'pp',  fecha:'ppDate',  col:'#00897B', ico:'💧' },
+  PE:  { label:'Escorrentía',        corto:'Escorrentía', campo:'pe',  fecha:'peDate',  col:'#1E88E5', ico:'🌧' },
+  PG:  { label:'Prueba de gas',      corto:'Gas',         campo:'pg',  fecha:'pgDate',  col:'#F4511E', ico:'🔥' },
+  PEL: { label:'Pruebas eléctricas', corto:'Eléctricas',  campo:'pel', fecha:'pelDate', col:'#C79000', ico:'⚡' },
+};
+const PRUEBA_KEYS = ['PP','PE','PG','PEL'];
+const puedePruebas = () => isAdmin || isTerreno;
+// ¿La prueba k de la vivienda h quedó marcada en un día ya cerrado? → no se puede desmarcar
+function pruebaLocked(h, k){
+  if (!isTerreno) return false;          // el admin siempre puede corregir
+  if (!lastCierreDate) return false;
+  const d = h[PRUEBAS[k].fecha];
+  if (!d) return true;                   // marcada sin fecha (dato antiguo): protegida
+  return d < getTodayISO() && d <= lastCierreDate;
 }
 
 // ── Estados acumulativos de patios (R Exterior) ───────
@@ -852,22 +905,194 @@ function updateEqStats(){
     : 'Solo el Admin y el Profesional de Terreno pueden asignar equipos.';
 }
 
+// ── Draw de la vista Pruebas ──────────────────────────
+function drawPruebas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const cfg = PRUEBAS[prueba];
+
+  Object.values(houses).forEach(h => {
+    if (!h.pts || h.pts.length < 3) return;
+    const pts = h.pts.map(p => toC(p.x, p.y));
+    const isHover = hoverHouse && hoverHouse.id === h.id;
+    function trace(){
+      ctx.beginPath();
+      pts.forEach((p,i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+      ctx.closePath();
+    }
+    const cx = pts.reduce((a,p)=>a+p.x,0)/pts.length;
+    const cy = pts.reduce((a,p)=>a+p.y,0)/pts.length;
+
+    if (h[cfg.campo]) {
+      trace();
+      ctx.fillStyle = eqRgba(cfg.col, isHover ? 0.60 : 0.45);
+      ctx.fill();
+      trace();
+      ctx.strokeStyle = cfg.col;
+      ctx.lineWidth = Math.max(2, 3*scale);
+      ctx.lineJoin = 'round';
+      ctx.setLineDash([]);
+      ctx.stroke();
+      if (scale > 0.25) {
+        const fs = Math.max(9, 12*scale);
+        ctx.font = `800 ${fs}px system-ui`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+        ctx.lineWidth = Math.max(2.5, 3.5*scale);
+        ctx.lineJoin = 'round';
+        ctx.strokeText('✓', cx, cy);
+        ctx.fillStyle = cfg.col;
+        ctx.fillText('✓', cx, cy);
+      }
+    } else {
+      trace();
+      ctx.fillStyle = isHover ? 'rgba(100,140,200,0.18)' : 'rgba(255,255,255,0.01)';
+      ctx.fill();
+      trace();
+      ctx.strokeStyle = isHover ? 'rgba(60,110,180,0.85)' : 'rgba(150,140,120,0.55)';
+      ctx.lineWidth = isHover ? Math.max(2,2.5*scale) : Math.max(1,1.3*scale);
+      ctx.lineJoin = 'round';
+      ctx.setLineDash([4,4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      if (h.num && scale > 0.3) {
+        const fs = Math.max(8, 10*scale);
+        ctx.font = `600 ${fs}px system-ui`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(26,26,46,0.25)';
+        ctx.fillText(h.num, cx, cy);
+      }
+    }
+  });
+  updatePrStats();
+}
+
+function updatePrStats(){
+  const cfg = PRUEBAS[prueba];
+  const lista = Object.values(houses).filter(h=>h.pts&&h.pts.length>=3);
+  const total = lista.length;
+  const nom = document.getElementById('pr-nombre');
+  if (nom) nom.textContent = cfg.label;
+
+  const res = document.getElementById('pr-resumen');
+  if (res){
+    const hechas = lista.filter(h=>h[cfg.campo]).length;
+    const pct = total ? Math.round(hechas*100/total) : 0;
+    res.innerHTML = `
+      <div class="eq-row"><span class="eq-chip" style="background:${cfg.col}"></span>
+        <span style="flex:1">Realizadas</span><strong style="color:${cfg.col}">${hechas}</strong></div>
+      <div class="eq-row"><span class="eq-chip" style="background:transparent;border:1px dashed #bbb"></span>
+        <span style="flex:1;color:#888">Pendientes</span><strong>${total - hechas}</strong></div>
+      <div style="height:7px;background:#f0efea;border-radius:5px;overflow:hidden;margin-top:3px">
+        <div style="height:100%;width:${pct}%;background:${cfg.col}"></div></div>
+      <div style="font-size:11px;color:#888;text-align:right">${pct}% de ${total} viviendas</div>`;
+  }
+
+  const todas = document.getElementById('pr-todas');
+  if (todas){
+    todas.innerHTML = PRUEBA_KEYS.map(k=>{
+      const c = PRUEBAS[k];
+      const n = lista.filter(h=>h[c.campo]).length;
+      const act = k === prueba;
+      return `<div class="eq-row" style="cursor:pointer${act?';font-weight:700':''}" onclick="setPrueba('${k}')">
+        <span class="eq-chip" style="background:${c.col}"></span>
+        <span style="flex:1">${c.ico} ${c.corto}</span>
+        <strong style="color:${c.col}">${n}</strong>
+        <span style="color:#bbb;font-size:11px">/${total}</span></div>`;
+    }).join('');
+  }
+
+  // Barra móvil: chips con el contador de cada prueba, que además seleccionan
+  const mpr = document.getElementById('mobile-pruebas');
+  if (mpr){
+    mpr.innerHTML = PRUEBA_KEYS.map(k=>{
+      const c = PRUEBAS[k];
+      const n = lista.filter(h=>h[c.campo]).length;
+      const act = k === prueba;
+      return `<button type="button" class="mob-stat" onclick="setPrueba('${k}')"
+        style="background:${eqRgba(c.col, act?0.92:0.16)};color:${act?'#fff':c.col};border-color:${act?c.col:'transparent'}">
+        <span>${c.ico} ${c.corto}</span><strong>${n}</strong></button>`;
+    }).join('');
+  }
+
+  const ayuda = document.getElementById('pr-ayuda');
+  if (ayuda) ayuda.textContent = puedePruebas()
+    ? 'Clic derecho sobre una vivienda para marcar sus pruebas.'
+    : 'Solo el Admin y el Encargado de Calidad pueden marcar pruebas.';
+}
+
+window.setPrueba = (k) => {
+  prueba = k;
+  PRUEBA_KEYS.forEach(x=>{
+    const b = document.getElementById('pr-'+x);
+    if (b) b.classList.toggle('active', x===k);
+  });
+  ctxMenu.style.display='none';
+  draw();
+};
+
+// Menú para marcar pruebas (Admin y Encargado de Calidad)
+function showPruebaCtxMenu(mx,my,h){
+  ctxMenu.innerHTML='';
+  const ttl=document.createElement('div'); ttl.className='ctx-ttl';
+  ttl.textContent = `Vivienda ${h.num||'?'} — Pruebas`;
+  ctxMenu.appendChild(ttl);
+  PRUEBA_KEYS.forEach(k=>{
+    const c = PRUEBAS[k];
+    const hecha = !!h[c.campo];
+    const locked = hecha && pruebaLocked(h, k);
+    const b=document.createElement('button');
+    const chip = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${hecha?c.col:'transparent'};border:1px solid ${c.col};margin-right:7px"></span>`;
+    if (locked){
+      b.innerHTML = chip + `<span style="color:#bbb">🔒 ${c.label} (cierre registrado)</span>`;
+      b.style.fontSize='11px'; b.style.cursor='not-allowed'; b.disabled=true;
+    } else if (hecha){
+      b.innerHTML = chip + `<strong style="color:${c.col}">✓ ${c.label}</strong> <span style="color:#aaa;font-size:11px">— quitar</span>`;
+      b.onclick=()=>{
+        update(ref(db,'helsby/v2/'+h.id), {[c.campo]:null, [c.fecha]:null});
+        ctxMenu.style.display='none';
+      };
+    } else {
+      b.innerHTML = chip + `${c.ico} ${c.label}`;
+      b.onclick=()=>{
+        update(ref(db,'helsby/v2/'+h.id), {[c.campo]:true, [c.fecha]:getTodayISO()});
+        ctxMenu.style.display='none';
+      };
+    }
+    ctxMenu.appendChild(b);
+  });
+  ctxMenu.style.display='block';
+  ctxMenu.style.left=mx+'px'; ctxMenu.style.top=my+'px';
+}
+
 window.setVista = (v) => {
   vista = v;
   document.getElementById('tab-rs').classList.toggle('active', v==='rs');
   document.getElementById('tab-eq').classList.toggle('active', v==='equipos');
+  const tpr = document.getElementById('tab-pr');
+  if (tpr) tpr.classList.toggle('active', v==='pruebas');
   document.getElementById('fases-bar').style.display = v==='equipos' ? 'flex' : 'none';
-  document.getElementById('panel-rs').style.display = v==='equipos' ? 'none' : 'block';
+  const pbar = document.getElementById('pruebas-bar');
+  if (pbar) pbar.style.display = v==='pruebas' ? 'flex' : 'none';
+  document.getElementById('panel-rs').style.display = v==='rs' ? 'block' : 'none';
   document.getElementById('panel-eq').style.display = v==='equipos' ? 'flex' : 'none';
+  const ppan = document.getElementById('panel-pr');
+  if (ppan) ppan.style.display = v==='pruebas' ? 'flex' : 'none';
   const simb = document.getElementById('simb-panel');
-  if (simb) simb.style.display = v==='equipos' ? 'none' : '';
-  // En móvil: ocultar stats y filtros de Rs mientras se ven Equipos
+  // en móvil el CSS lleva !important, así que hay que forzarlo igual
+  if (simb) simb.style.setProperty('display', v==='rs' ? 'block' : 'none', 'important');
+  // En móvil: ocultar stats y filtros de Rs mientras se ven Equipos o Pruebas
   const mstats = document.getElementById('mobile-stats');
-  if (mstats) mstats.style.display = v==='equipos' ? 'none' : '';
+  if (mstats) mstats.style.display = v==='rs' ? '' : 'none';
+  const mpr = document.getElementById('mobile-pruebas');
+  if (mpr) mpr.style.display = v==='pruebas' ? 'flex' : 'none';
   // (los filtros móviles viven en los chips de #mobile-stats, que ya se ocultan arriba)
   const lbl = document.getElementById('mobile-house-label');
   if (lbl) lbl.textContent = v==='equipos'
     ? (puedeEquipos() ? 'Mantén presionada una vivienda o patio para asignar equipo' : 'Vista de equipos (solo lectura)')
+    : v==='pruebas'
+    ? (puedePruebas() ? 'Mantén presionada una vivienda para marcar sus pruebas' : 'Vista de pruebas (solo lectura)')
     : 'Mantén presionada una vivienda para marcar su estado';
   ctxMenu.style.display='none';
   tooltip.style.display='none';
@@ -931,6 +1156,7 @@ function showEqCtxMenu(mx,my,o,tipo){
 // ── Draw ──────────────────────────────────────────────
 function draw() {
   if (vista === 'equipos') { drawEquipos(); return; }
+  if (vista === 'pruebas') { drawPruebas(); return; }
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   Object.values(houses).forEach(h => {
@@ -1262,7 +1488,7 @@ function hitTest(cx,cy) {
 
 // ── Eventos canvas ────────────────────────────────────
 canvas.addEventListener('click', e => {
-  if (vista === 'equipos') return; // en Equipos no se dibuja ni pega
+  if (vista === 'equipos' || vista === 'pruebas') return; // fuera de Rs no se dibuja ni pega
   const r=canvas.getBoundingClientRect();
   const cx=e.clientX-r.left, cy=e.clientY-r.top;
   if(mode==='paste-patio'&&isAdmin&&copiedPatio){
@@ -1316,6 +1542,13 @@ canvas.addEventListener('contextmenu', e=>{
     const tipo = EQ_FASES[faseEq].tipo;
     const o = tipo === 'viviendas' ? hitTest(cx,cy) : hitTestPatio(cx,cy);
     if (o) showEqCtxMenu(e.clientX, e.clientY, o, tipo);
+    return;
+  }
+  // Vista Pruebas: marcar pruebas (Admin y Encargado de Calidad)
+  if (vista === 'pruebas'){
+    if (!puedePruebas()) return;
+    const h = hitTest(cx,cy);
+    if (h) showPruebaCtxMenu(e.clientX, e.clientY, h);
     return;
   }
   if(!isAdmin && !isTerreno) return;
@@ -1378,6 +1611,27 @@ canvas.addEventListener('mousemove', e=>{
       tooltip.style.left=(e.clientX+14)+'px';
       tooltip.style.top=(e.clientY-10)+'px';
       tooltip.innerHTML=`<strong>${titulo}</strong><br><span style="font-size:10px;color:#aaa">${cfg.label}</span><br>${asign}`;
+    } else {
+      canvas.style.cursor='default';
+      tooltip.style.display='none';
+    }
+    draw();
+    return;
+  }
+  // Vista Pruebas: tooltip con el estado de las 4 pruebas
+  if (vista === 'pruebas'){
+    if (h){
+      canvas.style.cursor = puedePruebas() ? 'pointer' : 'default';
+      const filas = PRUEBA_KEYS.map(k=>{
+        const c = PRUEBAS[k];
+        return h[c.campo]
+          ? `<span style="font-size:11px;font-weight:700;color:${c.col}">✓ ${c.corto}</span>`
+          : `<span style="font-size:11px;color:#ccc">○ ${c.corto}</span>`;
+      }).join('<br>');
+      tooltip.style.display='block';
+      tooltip.style.left=(e.clientX+14)+'px';
+      tooltip.style.top=(e.clientY-10)+'px';
+      tooltip.innerHTML=`<strong>Vivienda ${h.num||'?'}</strong><br>${filas}`;
     } else {
       canvas.style.cursor='default';
       tooltip.style.display='none';
@@ -1457,7 +1711,7 @@ function showReadonlyInfo(mx, my, h) {
 }
 
 canvas.addEventListener('click', e => {
-  if (vista === 'equipos') return;
+  if (vista === 'equipos' || vista === 'pruebas') return;
   if (isAdmin || isTerreno) return;
   const r = canvas.getBoundingClientRect();
   const h = hitTest(e.clientX - r.left, e.clientY - r.top);
@@ -1743,6 +1997,7 @@ window.setMode=m=>{
   const mobSalir = document.getElementById('mob-btn-salir');
   const mobCerrar = document.getElementById('mob-btn-cerrar');
   if (vista === 'equipos') updateEqStats(); // refrescar ayuda/permisos del panel de equipos
+  if (vista === 'pruebas') updatePrStats(); // ídem para el panel de pruebas
   const conSesion = isAdmin || isTerreno || isProfT;
   if(mobIngresar) mobIngresar.style.display = conSesion ? 'none' : 'flex';
   if(mobSalir) mobSalir.style.display = conSesion ? 'flex' : 'none';
@@ -1971,6 +2226,16 @@ canvas.addEventListener('touchstart', e => {
         }
         return;
       }
+      if (!touchMoved && vista === 'pruebas') {
+        if (!puedePruebas()) return;
+        const r = canvas.getBoundingClientRect();
+        const o = hitTest(t.clientX-r.left, t.clientY-r.top);
+        if (o) {
+          navigator.vibrate && navigator.vibrate(40);
+          showPruebaCtxMenu(t.clientX, t.clientY, o);
+        }
+        return;
+      }
       if (!touchMoved && (isAdmin || isTerreno)) {
         const r = canvas.getBoundingClientRect();
         const cx = t.clientX - r.left;
@@ -2033,7 +2298,7 @@ canvas.addEventListener('touchend', e => {
     }
   }
   // Tap en modo lectura: mostrar info de vivienda
-  if (!touchMoved && vista !== 'equipos' && !isAdmin && !isTerreno && e.changedTouches.length === 1) {
+  if (!touchMoved && vista === 'rs' && !isAdmin && !isTerreno && e.changedTouches.length === 1) {
     const t = e.changedTouches[0];
     const r = canvas.getBoundingClientRect();
     const h = hitTest(t.clientX - r.left, t.clientY - r.top);
@@ -2097,7 +2362,7 @@ onValue(cierreRef, snap => {
 });
 
 function getCounts() {
-  const c = {R0:0, R1F:0, R1:0, RFF:0, RF:0, ND:0, R1EF:0, R1E:0, RFEF:0, RFE:0, DOM:0, total:0};
+  const c = {R0:0, R1F:0, R1:0, RFF:0, RF:0, ND:0, R1EF:0, R1E:0, RFEF:0, RFE:0, DOM:0, PP:0, PE:0, PG:0, PEL:0, total:0};
   Object.values(houses).forEach(h => {
     const rank = STATE_RANK[h.state||'ND'];
     if(rank>=1) c.R0++;
@@ -2107,6 +2372,8 @@ function getCounts() {
     if(rank>=5) c.RF++;
     if(rank===0) c.ND++;
     if(h.dom) c.DOM++; // independiente del estado
+    // Pruebas: las 4 son independientes entre sí y del avance de Rs
+    PRUEBA_KEYS.forEach(k => { if (h[PRUEBAS[k].campo]) c[k]++; });
     c.total++;
   });
   // Patios: cadena acumulativa R1 Ext Fichaje → R1 Ext Recibido → RF Ext Fichaje → RF Ext Recibido
@@ -2143,7 +2410,7 @@ window.mostrarCierreDia = async () => {
   } else {
     keyAnterior = laborableKeys.length > 0 ? laborableKeys[laborableKeys.length-1] : null;
   }
-  const anterior = keyAnterior ? cierres[keyAnterior].acumulado : {R0:0, R1F:0, R1:0, RFF:0, RF:0, R1EF:0, R1E:0, RFEF:0, RFE:0, DOM:0};
+  const anterior = keyAnterior ? cierres[keyAnterior].acumulado : {R0:0, R1F:0, R1:0, RFF:0, RF:0, R1EF:0, R1E:0, RFEF:0, RFE:0, DOM:0, PP:0, PE:0, PG:0, PEL:0};
   // Registros antiguos: si falta un rango de patio, se hereda del siguiente que exista
   const antPatio = (k) => {
     if (anterior[k] !== undefined) return anterior[k] || 0;
@@ -2163,6 +2430,10 @@ window.mostrarCierreDia = async () => {
     RFEF: actual.RFEF - antPatio('RFEF'),
     RFE: actual.RFE - (anterior.RFE||0),
     DOM: actual.DOM - (anterior.DOM||0), // DOM es independiente del avance de Rs
+    PP:  actual.PP  - (anterior.PP ||0),
+    PE:  actual.PE  - (anterior.PE ||0),
+    PG:  actual.PG  - (anterior.PG ||0),
+    PEL: actual.PEL - (anterior.PEL||0),
   };
 
   const warningHtml = cierreHoy ? `
@@ -2217,11 +2488,17 @@ window.mostrarCierreDia = async () => {
           <div style="font-size:11px;color:#111;font-weight:600">DOM</div>
           <div style="font-size:24px;font-weight:700;color:#111">+${delta.DOM}</div>
         </div>
+        ${PRUEBA_KEYS.map(k=>`
+        <div style="background:${eqRgba(PRUEBAS[k].col,0.16)};border-radius:8px;padding:10px">
+          <div style="font-size:11px;color:${PRUEBAS[k].col};font-weight:600">${PRUEBAS[k].ico} ${PRUEBAS[k].corto}</div>
+          <div style="font-size:24px;font-weight:700;color:${PRUEBAS[k].col}">+${delta[k]}</div>
+        </div>`).join('')}
       </div>
     </div>
     <div style="font-size:11px;color:#aaa;text-align:center">
       Acumulado total: R0=${actual.R0} · R1F=${actual.R1F} · R1=${actual.R1} · RFF=${actual.RFF} · RF=${actual.RF}<br>
-      R1EF=${actual.R1EF} · R1E=${actual.R1E} · RFEF=${actual.RFEF} · RFE=${actual.RFE} · DOM=${actual.DOM}
+      R1EF=${actual.R1EF} · R1E=${actual.R1E} · RFEF=${actual.RFEF} · RFE=${actual.RFE} · DOM=${actual.DOM}<br>
+      Pruebas: Presión=${actual.PP} · Escorrentía=${actual.PE} · Gas=${actual.PG} · Eléctricas=${actual.PEL}
     </div>
   `;
 
@@ -2229,7 +2506,7 @@ window.mostrarCierreDia = async () => {
   document.getElementById('btn-confirmar-cierre').textContent = cierreHoy ? 'Reemplazar cierre de hoy' : 'Confirmar cierre';
 
   window._pendingCierre = {
-    delta, acumulado: {R0:actual.R0,R1F:actual.R1F,R1:actual.R1,RFF:actual.RFF,RF:actual.RF,R1EF:actual.R1EF,R1E:actual.R1E,RFEF:actual.RFEF,RFE:actual.RFE,DOM:actual.DOM},
+    delta, acumulado: {R0:actual.R0,R1F:actual.R1F,R1:actual.R1,RFF:actual.RFF,RF:actual.RF,R1EF:actual.R1EF,R1E:actual.R1E,RFEF:actual.RFEF,RFE:actual.RFE,DOM:actual.DOM,PP:actual.PP,PE:actual.PE,PG:actual.PG,PEL:actual.PEL},
     fecha: fechaStr, ts: now.toISOString(),
     reemplazarKey: cierreHoyKey || null
   };
@@ -2299,12 +2576,12 @@ window.verDetalle = () => {
   const div = document.getElementById('detalle-contenido');
   // Contar por tipología y estado
   const counts = {};
-  TIPOLOGIAS.forEach(t => { counts[t.id] = {R0:0,R1F:0,R1:0,RFF:0,RF:0,DOM:0}; });
-  counts['??'] = {R0:0,R1F:0,R1:0,RFF:0,RF:0,DOM:0}; // sin tipología asignada
+  TIPOLOGIAS.forEach(t => { counts[t.id] = {R0:0,R1F:0,R1:0,RFF:0,RF:0,DOM:0,PP:0,PE:0,PG:0,PEL:0}; });
+  counts['??'] = {R0:0,R1F:0,R1:0,RFF:0,RF:0,DOM:0,PP:0,PE:0,PG:0,PEL:0}; // sin tipología asignada
 
   Object.values(houses).forEach(h => {
     const tid = h.tipo || '??';
-    if(!counts[tid]) counts[tid]={R0:0,R1F:0,R1:0,RFF:0,RF:0,DOM:0};
+    if(!counts[tid]) counts[tid]={R0:0,R1F:0,R1:0,RFF:0,RF:0,DOM:0,PP:0,PE:0,PG:0,PEL:0};
     const rank = STATE_RANK[h.state||'ND'];
     if(rank>=1) counts[tid].R0++;
     if(rank>=2) counts[tid].R1F++;
@@ -2312,6 +2589,7 @@ window.verDetalle = () => {
     if(rank>=4) counts[tid].RFF++;
     if(rank>=5) counts[tid].RF++;
     if(h.dom) counts[tid].DOM++; // independiente del estado
+    PRUEBA_KEYS.forEach(k => { if (h[PRUEBAS[k].campo]) counts[tid][k]++; });
   });
 
   // Totales por tipología: contar viviendas que tienen tipo asignado
@@ -2323,7 +2601,7 @@ window.verDetalle = () => {
 
   const mkTable = (stKey, stLabel, col) => {
     const rows = TIPOLOGIAS.map(t => {
-      const c = counts[t.id] || {R0:0,R1F:0,R1:0,RFF:0,RF:0,DOM:0};
+      const c = counts[t.id] || {R0:0,R1F:0,R1:0,RFF:0,RF:0,DOM:0,PP:0,PE:0,PG:0,PEL:0};
       const total = totalesPorTipo[t.id] || 0;
       const llevamos = c[stKey];
       const faltan = Math.max(0, total - llevamos);
@@ -2369,7 +2647,8 @@ window.verDetalle = () => {
     mkTable('R1','R1 Interior — Recibida','#27500A') +
     mkTable('RFF','RF Interior — Fichaje','#6C2A8C') +
     mkTable('RF','RF Interior — Recibida','#1a1a2e') +
-    mkTable('DOM','DOM','#111111');
+    mkTable('DOM','DOM','#111111') +
+    PRUEBA_KEYS.map(k => mkTable(k, PRUEBAS[k].ico + ' ' + PRUEBAS[k].label, PRUEBAS[k].col)).join('');
 
   document.getElementById('detalle-modal').style.display='flex';
 };
@@ -2431,6 +2710,10 @@ window.verHistorial = async () => {
     { key:'RFEF', label:'RF ext. (fichaje)',  bg:'#FFF3B0', color:'#7a6000', cellColor:'#7a6000' },
     { key:'RFE', label:'RF ext. (recibido)',  bg:'#F5DC55', color:'#5C4A00', cellColor:'#5C4A00' },
     { key:'DOM', label:'DOM',  bg:'#E4E4E4', color:'#111', cellColor:'#111' },
+    { key:'PP',  label:'P. presión',   bg:'#DCEFEC', color:'#00695C', cellColor:'#00897B' },
+    { key:'PE',  label:'Escorrentía',  bg:'#DDEBFA', color:'#1565C0', cellColor:'#1E88E5' },
+    { key:'PG',  label:'P. gas',       bg:'#FBE2D7', color:'#BF360C', cellColor:'#F4511E' },
+    { key:'PEL', label:'P. eléctricas',bg:'#F7EDCE', color:'#8A6A00', cellColor:'#C79000' },
   ];
   // Registros de cierre anteriores a "R1 fichaje"/"RF fichaje" no tienen esos campos — se asume que
   // ese avance ocurrió junto con "R1 recibida"/"RF recibida" (antes eran el mismo paso).
@@ -2547,12 +2830,12 @@ const _origDraw = draw;
       function _parseFechaAuto(f) { const [d,m,y]=f.split('/'); return new Date(+y,+m-1,+d); }
       const labKeys = keys.filter(k => { const dw=_parseFechaAuto(cierres[k].fecha).getDay(); return dw!==0&&dw!==6; });
       const lastKey = labKeys.length > 0 ? labKeys[labKeys.length-1] : null;
-      const anterior = lastKey ? cierres[lastKey].acumulado : {R0:0,R1F:0,R1:0,RFF:0,RF:0,R1EF:0,R1E:0,RFEF:0,RFE:0,DOM:0};
+      const anterior = lastKey ? cierres[lastKey].acumulado : {R0:0,R1F:0,R1:0,RFF:0,RF:0,R1EF:0,R1E:0,RFEF:0,RFE:0,DOM:0,PP:0,PE:0,PG:0,PEL:0};
       const antP = (k) => anterior[k] !== undefined ? (anterior[k]||0) : ((anterior.RFEF !== undefined ? anterior.RFEF : anterior.RFE) || 0);
       const actual = getCounts();
-      const delta = { R0: actual.R0-(anterior.R0||0), R1F: actual.R1F-((anterior.R1F !== undefined ? anterior.R1F : anterior.R1) || 0), R1: actual.R1-(anterior.R1||0), RFF: actual.RFF-((anterior.RFF !== undefined ? anterior.RFF : anterior.RF) || 0), RF: actual.RF-(anterior.RF||0), R1EF: actual.R1EF-antP('R1EF'), R1E: actual.R1E-antP('R1E'), RFEF: actual.RFEF-antP('RFEF'), RFE: actual.RFE-(anterior.RFE||0), DOM: actual.DOM-(anterior.DOM||0) };
+      const delta = { R0: actual.R0-(anterior.R0||0), R1F: actual.R1F-((anterior.R1F !== undefined ? anterior.R1F : anterior.R1) || 0), R1: actual.R1-(anterior.R1||0), RFF: actual.RFF-((anterior.RFF !== undefined ? anterior.RFF : anterior.RF) || 0), RF: actual.RF-(anterior.RF||0), R1EF: actual.R1EF-antP('R1EF'), R1E: actual.R1E-antP('R1E'), RFEF: actual.RFEF-antP('RFEF'), RFE: actual.RFE-(anterior.RFE||0), DOM: actual.DOM-(anterior.DOM||0), PP: actual.PP-(anterior.PP||0), PE: actual.PE-(anterior.PE||0), PG: actual.PG-(anterior.PG||0), PEL: actual.PEL-(anterior.PEL||0) };
       await fbPush(cierreRef, {
-        delta, acumulado: {R0:actual.R0,R1F:actual.R1F,R1:actual.R1,RFF:actual.RFF,RF:actual.RF,R1EF:actual.R1EF,R1E:actual.R1E,RFEF:actual.RFEF,RFE:actual.RFE,DOM:actual.DOM},
+        delta, acumulado: {R0:actual.R0,R1F:actual.R1F,R1:actual.R1,RFF:actual.RFF,RF:actual.RF,R1EF:actual.R1EF,R1E:actual.R1E,RFEF:actual.RFEF,RFE:actual.RFE,DOM:actual.DOM,PP:actual.PP,PE:actual.PE,PG:actual.PG,PEL:actual.PEL},
         fecha: fechaStr, ts: now.toISOString(), auto: true
       });
       showToast('🔒 Cierre automático del día guardado');
