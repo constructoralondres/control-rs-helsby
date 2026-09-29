@@ -104,7 +104,8 @@ jobs:
                   houses = get_json(db + '/' + name + '/v2.json') or {}
                   patios = get_json(db + '/' + name + '/patios.json') or {}
 
-                  actual = {'R0': 0, 'R1F': 0, 'R1': 0, 'RFF': 0, 'RF': 0, 'R1EF': 0, 'R1E': 0, 'RFEF': 0, 'RFE': 0, 'DOM': 0}
+                  actual = {'R0': 0, 'R1F': 0, 'R1': 0, 'RFF': 0, 'RF': 0, 'R1EF': 0, 'R1E': 0, 'RFEF': 0, 'RFE': 0, 'DOM': 0,
+                             'PP': 0, 'PE': 0, 'PG': 0, 'PEL': 0}
                   for h in houses.values():
                       rank = STATE_RANK.get(h.get('state', 'ND'), 0)
                       if rank >= 1: actual['R0'] += 1
@@ -113,6 +114,11 @@ jobs:
                       if rank >= 4: actual['RFF'] += 1
                       if rank >= 5: actual['RF'] += 1
                       if h.get('dom'): actual['DOM'] += 1
+                      # Pruebas (independientes entre si y del avance de Rs)
+                      if h.get('pp'):  actual['PP']  += 1
+                      if h.get('pe'):  actual['PE']  += 1
+                      if h.get('pg'):  actual['PG']  += 1
+                      if h.get('pel'): actual['PEL'] += 1
                   # Patios: cadena acumulativa R1 Ext Fichaje -> R1 Ext Recibido -> RF Ext Fichaje -> RF Ext Recibido
                   def patio_rank(p):
                       if p.get('rfExt'):  return 4
@@ -132,7 +138,7 @@ jobs:
                       key=lambda c: fecha_to_dt(c.get('fecha',''))
                   )
                   anterior = lab[-1].get('acumulado', {}) if lab else {}
-                  delta = {k: actual[k] - prev_val(anterior, k) for k in ['R0','R1F','R1','RFF','RF','R1EF','R1E','RFEF','RFE','DOM']}
+                  delta = {k: actual[k] - prev_val(anterior, k) for k in ['R0','R1F','R1','RFF','RF','R1EF','R1E','RFEF','RFE','DOM','PP','PE','PG','PEL']}
                   print("  Delta: " + str(delta))
 
                   result = post_json(db + '/' + name + '/cierres.json', {
