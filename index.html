@@ -65,6 +65,7 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
 #fases-bar,#pruebas-bar{display:flex;align-items:center;gap:6px;padding:7px 16px;background:#fff;border-bottom:1px solid #e0ddd6;flex-shrink:0;overflow-x:auto;white-space:nowrap}
 .fase-btn{padding:5px 12px;border:1px solid #ddd;background:#fff;color:#555;font-size:12px;cursor:pointer;border-radius:20px;flex-shrink:0}
 .fase-btn.active{background:#1a1a2e;color:#fff;border-color:#1a1a2e;font-weight:600}
+.fase-btn.active svg path{fill:#fff}
 .eq-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#333}
 .eq-chip{width:14px;height:14px;border-radius:3px;flex-shrink:0}
 
@@ -206,10 +207,10 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
 <!-- Selector de prueba (solo en la vista Pruebas) -->
 <div id="pruebas-bar" style="display:none">
   <span style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;margin-right:4px">Prueba</span>
-  <button class="fase-btn active" id="pr-PP"  onclick="setPrueba('PP')">💧 Presión</button>
-  <button class="fase-btn" id="pr-PE"  onclick="setPrueba('PE')">🌧 Escorrentía</button>
-  <button class="fase-btn" id="pr-PG"  onclick="setPrueba('PG')">🔥 Gas</button>
-  <button class="fase-btn" id="pr-PEL" onclick="setPrueba('PEL')">⚡ Eléctricas</button>
+  <button class="fase-btn active" id="pr-PP"  onclick="setPrueba('PP')"><svg width="13" height="13" viewBox="0 0 100 100" style="vertical-align:-2px"><path d="M50 8 C50 8 16 48 16 66 a34 34 0 0 0 68 0 C84 48 50 8 50 8 Z" fill="#1565C0"></path></svg> Presión</button>
+  <button class="fase-btn" id="pr-PE"  onclick="setPrueba('PE')"><svg width="13" height="13" viewBox="0 0 100 100" style="vertical-align:-2px"><path d="M50 8 C50 8 16 48 16 66 a34 34 0 0 0 68 0 C84 48 50 8 50 8 Z" fill="#2E7D32"></path></svg> Escorrentía</button>
+  <button class="fase-btn" id="pr-PG"  onclick="setPrueba('PG')"><svg width="13" height="13" viewBox="0 0 100 100" style="vertical-align:-2px"><path d="M36 16 h28 v9 h-28 z M30 25 h40 a12 12 0 0 1 12 12 v42 a10 10 0 0 1 -10 10 h-44 a10 10 0 0 1 -10 -10 v-42 a12 12 0 0 1 12 -12 z" fill="#E65100"></path></svg> Gas</button>
+  <button class="fase-btn" id="pr-PEL" onclick="setPrueba('PEL')"><svg width="13" height="13" viewBox="0 0 100 100" style="vertical-align:-2px"><path d="M58 6 L24 56 h20 l-8 40 L78 42 H56 z" fill="#F9A825"></path></svg> Eléctricas</button>
 </div>
 
 <div id="main">
@@ -355,16 +356,7 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
       <div id="pr-todas" style="display:flex;flex-direction:column;gap:5px"></div>
       <div style="height:1px;background:#eee"></div>
       <div class="stitle">Simbología</div>
-      <div style="display:flex;flex-direction:column;gap:5px;font-size:11px;color:#555">
-        <div style="display:flex;align-items:center;gap:8px">
-          <svg width="28" height="18"><rect x="2" y="2" width="24" height="14" fill="rgba(0,150,136,0.45)" stroke="#00897B" stroke-width="2.5"></rect></svg>
-          Prueba realizada
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <svg width="28" height="18"><rect x="2" y="2" width="24" height="14" fill="none" stroke="#bbb" stroke-width="1.3" stroke-dasharray="4,4"></rect></svg>
-          Pendiente
-        </div>
-      </div>
+      <div id="pr-simbologia" style="display:flex;flex-direction:column;gap:5px;font-size:11px;color:#555"></div>
       <div id="pr-ayuda" style="font-size:11px;color:#aaa;line-height:1.4"></div>
     </div>
 
@@ -726,12 +718,46 @@ function eqRgba(hex, a){
 // 4 pruebas independientes entre sí, marcadas sobre la vivienda.
 let prueba = 'PP';
 const PRUEBAS = {
-  PP:  { label:'Prueba de presión',  corto:'Presión',     campo:'pp',  fecha:'ppDate',  col:'#00897B', ico:'💧' },
-  PE:  { label:'Escorrentía',        corto:'Escorrentía', campo:'pe',  fecha:'peDate',  col:'#1E88E5', ico:'🌧' },
-  PG:  { label:'Prueba de gas',      corto:'Gas',         campo:'pg',  fecha:'pgDate',  col:'#F4511E', ico:'🔥' },
-  PEL: { label:'Pruebas eléctricas', corto:'Eléctricas',  campo:'pel', fecha:'pelDate', col:'#C79000', ico:'⚡' },
+  PP:  { label:'Prueba de presión',  corto:'Presión',     campo:'pp',  fecha:'ppDate',  col:'#1565C0', forma:'gota' },
+  PE:  { label:'Escorrentía',        corto:'Escorrentía', campo:'pe',  fecha:'peDate',  col:'#2E7D32', forma:'gota' },
+  PG:  { label:'Prueba de gas',      corto:'Gas',         campo:'pg',  fecha:'pgDate',  col:'#E65100', forma:'balon' },
+  PEL: { label:'Pruebas eléctricas', corto:'Eléctricas',  campo:'pel', fecha:'pelDate', col:'#F9A825', forma:'rayo' },
 };
 const PRUEBA_KEYS = ['PP','PE','PG','PEL'];
+
+// ── Íconos de las pruebas ─────────────────────────────
+// Se dibujan dentro de un cuadrado de 100x100 y se escalan según el uso.
+const PR_PATHS = {
+  // gota: punta arriba, panza abajo
+  gota:  'M50 8 C50 8 16 48 16 66 a34 34 0 0 0 68 0 C84 48 50 8 50 8 Z',
+  // balón de gas: cuerpo redondeado + cuello + asa
+  balon: 'M36 16 h28 v9 h-28 z M30 25 h40 a12 12 0 0 1 12 12 v42 a10 10 0 0 1 -10 10 h-44 a10 10 0 0 1 -10 -10 v-42 a12 12 0 0 1 12 -12 z',
+  // rayo
+  rayo:  'M58 6 L24 56 h20 l-8 40 L78 42 H56 z',
+};
+// SVG listo para usar en el HTML (panel, chips, botones)
+function prIconSVG(k, size, color){
+  const c = PRUEBAS[k];
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" style="flex-shrink:0;vertical-align:middle">`
+       + `<path d="${PR_PATHS[c.forma]}" fill="${color || c.col}"/></svg>`;
+}
+// Dibujo sobre el canvas del plano, con transparencia
+function drawPruebaIcon(k, cx, cy, size, alpha){
+  const c = PRUEBAS[k];
+  const p = new Path2D(PR_PATHS[c.forma]);
+  ctx.save();
+  ctx.translate(cx - size/2, cy - size/2);
+  ctx.scale(size/100, size/100);
+  ctx.globalAlpha = alpha;
+  // halo blanco para que se lea sobre el plano
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx.lineWidth = 10;
+  ctx.lineJoin = 'round';
+  ctx.stroke(p);
+  ctx.fillStyle = c.col;
+  ctx.fill(p);
+  ctx.restore();
+}
 const puedePruebas = () => isAdmin || isTerreno;
 // ¿La prueba k de la vivienda h quedó marcada en un día ya cerrado? → no se puede desmarcar
 function pruebaLocked(h, k){
@@ -924,7 +950,7 @@ function drawPruebas() {
 
     if (h[cfg.campo]) {
       trace();
-      ctx.fillStyle = eqRgba(cfg.col, isHover ? 0.60 : 0.45);
+      ctx.fillStyle = eqRgba(cfg.col, isHover ? 0.34 : 0.22);
       ctx.fill();
       trace();
       ctx.strokeStyle = cfg.col;
@@ -932,17 +958,14 @@ function drawPruebas() {
       ctx.lineJoin = 'round';
       ctx.setLineDash([]);
       ctx.stroke();
-      if (scale > 0.25) {
-        const fs = Math.max(9, 12*scale);
-        ctx.font = `800 ${fs}px system-ui`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.strokeStyle = 'rgba(255,255,255,0.95)';
-        ctx.lineWidth = Math.max(2.5, 3.5*scale);
-        ctx.lineJoin = 'round';
-        ctx.strokeText('✓', cx, cy);
-        ctx.fillStyle = cfg.col;
-        ctx.fillText('✓', cx, cy);
+      // Ícono propio de la prueba, semitransparente, al centro de la vivienda
+      if (scale > 0.22) {
+        const lado = Math.min(
+          Math.max(...pts.map(p=>p.x)) - Math.min(...pts.map(p=>p.x)),
+          Math.max(...pts.map(p=>p.y)) - Math.min(...pts.map(p=>p.y))
+        );
+        const size = Math.max(11, Math.min(lado * 0.62, 34*scale));
+        drawPruebaIcon(prueba, cx, cy, size, isHover ? 0.95 : 0.72);
       }
     } else {
       trace();
@@ -997,7 +1020,7 @@ function updatePrStats(){
       const act = k === prueba;
       return `<div class="eq-row" style="cursor:pointer${act?';font-weight:700':''}" onclick="setPrueba('${k}')">
         <span class="eq-chip" style="background:${c.col}"></span>
-        <span style="flex:1">${c.ico} ${c.corto}</span>
+        <span style="flex:1;display:flex;align-items:center;gap:6px">${prIconSVG(k,14)} ${c.corto}</span>
         <strong style="color:${c.col}">${n}</strong>
         <span style="color:#bbb;font-size:11px">/${total}</span></div>`;
     }).join('');
@@ -1012,13 +1035,25 @@ function updatePrStats(){
       const act = k === prueba;
       return `<button type="button" class="mob-stat" onclick="setPrueba('${k}')"
         style="background:${eqRgba(c.col, act?0.92:0.16)};color:${act?'#fff':c.col};border-color:${act?c.col:'transparent'}">
-        <span>${c.ico} ${c.corto}</span><strong>${n}</strong></button>`;
+        <span style="display:flex;align-items:center;gap:4px;justify-content:center">${prIconSVG(k,12,act?'#fff':c.col)} ${c.corto}</span><strong>${n}</strong></button>`;
     }).join('');
   }
 
+  const simb = document.getElementById('pr-simbologia');
+  if (simb) simb.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px">
+      <svg width="28" height="20" style="flex-shrink:0"><rect x="2" y="2" width="24" height="16" fill="${eqRgba(cfg.col,0.22)}" stroke="${cfg.col}" stroke-width="2.5"></rect>
+        <g transform="translate(9,4) scale(0.1)" opacity="0.72"><path d="${PR_PATHS[cfg.forma]}" fill="${cfg.col}"></path></g></svg>
+      ${cfg.label} realizada
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <svg width="28" height="20" style="flex-shrink:0"><rect x="2" y="2" width="24" height="16" fill="none" stroke="#bbb" stroke-width="1.3" stroke-dasharray="4,4"></rect></svg>
+      Pendiente
+    </div>`;
+
   const ayuda = document.getElementById('pr-ayuda');
   if (ayuda) ayuda.textContent = puedePruebas()
-    ? 'Clic derecho sobre una vivienda para marcar sus pruebas.'
+    ? `Clic derecho sobre una vivienda para marcar ${cfg.label.toLowerCase()}. Para las otras pruebas, cambia de pestaña.`
     : 'Solo el Admin y el Encargado de Calidad pueden marcar pruebas.';
 }
 
@@ -1036,32 +1071,40 @@ window.setPrueba = (k) => {
 function showPruebaCtxMenu(mx,my,h){
   ctxMenu.innerHTML='';
   const ttl=document.createElement('div'); ttl.className='ctx-ttl';
-  ttl.textContent = `Vivienda ${h.num||'?'} — Pruebas`;
+  const c = PRUEBAS[prueba];   // solo se puede marcar la prueba de la pestaña activa
+  ttl.textContent = `Vivienda ${h.num||'?'} — ${c.label}`;
   ctxMenu.appendChild(ttl);
-  PRUEBA_KEYS.forEach(k=>{
-    const c = PRUEBAS[k];
-    const hecha = !!h[c.campo];
-    const locked = hecha && pruebaLocked(h, k);
-    const b=document.createElement('button');
-    const chip = `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${hecha?c.col:'transparent'};border:1px solid ${c.col};margin-right:7px"></span>`;
-    if (locked){
-      b.innerHTML = chip + `<span style="color:#bbb">🔒 ${c.label} (cierre registrado)</span>`;
-      b.style.fontSize='11px'; b.style.cursor='not-allowed'; b.disabled=true;
-    } else if (hecha){
-      b.innerHTML = chip + `<strong style="color:${c.col}">✓ ${c.label}</strong> <span style="color:#aaa;font-size:11px">— quitar</span>`;
-      b.onclick=()=>{
-        update(ref(db,'helsby/v2/'+h.id), {[c.campo]:null, [c.fecha]:null});
-        ctxMenu.style.display='none';
-      };
-    } else {
-      b.innerHTML = chip + `${c.ico} ${c.label}`;
-      b.onclick=()=>{
-        update(ref(db,'helsby/v2/'+h.id), {[c.campo]:true, [c.fecha]:getTodayISO()});
-        ctxMenu.style.display='none';
-      };
-    }
-    ctxMenu.appendChild(b);
-  });
+  const hecha = !!h[c.campo];
+  const locked = hecha && pruebaLocked(h, prueba);
+  const b=document.createElement('button');
+  const ico = prIconSVG(prueba, 15) + ' ';
+  if (locked){
+    b.innerHTML = ico + `<span style="color:#bbb">🔒 ${c.label} — bloqueada (cierre registrado)</span>`;
+    b.style.fontSize='11px'; b.style.cursor='not-allowed'; b.disabled=true;
+  } else if (hecha){
+    b.innerHTML = ico + `<strong style="color:${c.col}">✓ ${c.label}</strong> <span style="color:#aaa;font-size:11px">— quitar</span>`;
+    b.onclick=()=>{
+      update(ref(db,'helsby/v2/'+h.id), {[c.campo]:null, [c.fecha]:null});
+      ctxMenu.style.display='none';
+    };
+  } else {
+    b.innerHTML = ico + `<strong>Marcar ${c.label}</strong>`;
+    b.onclick=()=>{
+      update(ref(db,'helsby/v2/'+h.id), {[c.campo]:true, [c.fecha]:getTodayISO()});
+      ctxMenu.style.display='none';
+    };
+  }
+  ctxMenu.appendChild(b);
+  // Estado de las otras pruebas, solo informativo
+  const sep=document.createElement('div'); sep.className='sep'; ctxMenu.appendChild(sep);
+  const info=document.createElement('div');
+  info.style.cssText='padding:5px 10px 6px;font-size:10px;color:#aaa;line-height:1.7';
+  info.innerHTML = PRUEBA_KEYS.filter(k=>k!==prueba).map(k=>{
+    const o = PRUEBAS[k];
+    return `<div style="display:flex;align-items:center;gap:5px">${prIconSVG(k,11)}
+      <span style="color:${h[o.campo]?o.col:'#ccc'}">${h[o.campo]?'✓':'○'} ${o.corto}</span></div>`;
+  }).join('') + `<div style="margin-top:3px;color:#ccc">Cambia de pestaña para marcarlas</div>`;
+  ctxMenu.appendChild(info);
   ctxMenu.style.display='block';
   ctxMenu.style.left=mx+'px'; ctxMenu.style.top=my+'px';
 }
@@ -2490,7 +2533,7 @@ window.mostrarCierreDia = async () => {
         </div>
         ${PRUEBA_KEYS.map(k=>`
         <div style="background:${eqRgba(PRUEBAS[k].col,0.16)};border-radius:8px;padding:10px">
-          <div style="font-size:11px;color:${PRUEBAS[k].col};font-weight:600">${PRUEBAS[k].ico} ${PRUEBAS[k].corto}</div>
+          <div style="font-size:11px;color:${PRUEBAS[k].col};font-weight:600;display:flex;align-items:center;gap:4px">${prIconSVG(k,12)} ${PRUEBAS[k].corto}</div>
           <div style="font-size:24px;font-weight:700;color:${PRUEBAS[k].col}">+${delta[k]}</div>
         </div>`).join('')}
       </div>
@@ -2648,7 +2691,7 @@ window.verDetalle = () => {
     mkTable('RFF','RF Interior — Fichaje','#6C2A8C') +
     mkTable('RF','RF Interior — Recibida','#1a1a2e') +
     mkTable('DOM','DOM','#111111') +
-    PRUEBA_KEYS.map(k => mkTable(k, PRUEBAS[k].ico + ' ' + PRUEBAS[k].label, PRUEBAS[k].col)).join('');
+    PRUEBA_KEYS.map(k => mkTable(k, PRUEBAS[k].label, PRUEBAS[k].col)).join('');
 
   document.getElementById('detalle-modal').style.display='flex';
 };
@@ -2710,10 +2753,10 @@ window.verHistorial = async () => {
     { key:'RFEF', label:'RF ext. (fichaje)',  bg:'#FFF3B0', color:'#7a6000', cellColor:'#7a6000' },
     { key:'RFE', label:'RF ext. (recibido)',  bg:'#F5DC55', color:'#5C4A00', cellColor:'#5C4A00' },
     { key:'DOM', label:'DOM',  bg:'#E4E4E4', color:'#111', cellColor:'#111' },
-    { key:'PP',  label:'P. presión',   bg:'#DCEFEC', color:'#00695C', cellColor:'#00897B' },
-    { key:'PE',  label:'Escorrentía',  bg:'#DDEBFA', color:'#1565C0', cellColor:'#1E88E5' },
-    { key:'PG',  label:'P. gas',       bg:'#FBE2D7', color:'#BF360C', cellColor:'#F4511E' },
-    { key:'PEL', label:'P. eléctricas',bg:'#F7EDCE', color:'#8A6A00', cellColor:'#C79000' },
+    { key:'PP',  label:'P. presión',   bg:'#DDEAF8', color:'#0D47A1', cellColor:'#1565C0' },
+    { key:'PE',  label:'Escorrentía',  bg:'#DFEDE0', color:'#1B5E20', cellColor:'#2E7D32' },
+    { key:'PG',  label:'P. gas',       bg:'#FBE3D0', color:'#BF360C', cellColor:'#E65100' },
+    { key:'PEL', label:'P. eléctricas',bg:'#FCF1CE', color:'#8A6A00', cellColor:'#C79000' },
   ];
   // Registros de cierre anteriores a "R1 fichaje"/"RF fichaje" no tienen esos campos — se asume que
   // ese avance ocurrió junto con "R1 recibida"/"RF recibida" (antes eran el mismo paso).
