@@ -1539,6 +1539,13 @@ function draw() {
       tracePath();
       ctx.fillStyle = 'rgba(108,42,140,0.16)';
       ctx.fill();
+      // Contorno morado grueso, para que la marca se lea sobre el plano
+      tracePath();
+      ctx.strokeStyle = COL_RFF;
+      ctx.lineWidth = Math.max(3, 4*scale);
+      ctx.lineJoin = 'round';
+      ctx.setLineDash([]);
+      ctx.stroke();
       const cxf = pts.reduce((a,p)=>a+p.x,0)/pts.length;
       const cyf = pts.reduce((a,p)=>a+p.y,0)/pts.length;
       const rf2 = Math.max(7, 9*scale);
@@ -1560,6 +1567,13 @@ function draw() {
       tracePath();
       ctx.fillStyle = 'rgba(0,0,0,0.28)';
       ctx.fill();
+      // Contorno negro grueso
+      tracePath();
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth = Math.max(3.5, 4.5*scale);
+      ctx.lineJoin = 'round';
+      ctx.setLineDash([]);
+      ctx.stroke();
       // Ícono: círculo con tick negro
       const cx2 = pts.reduce((a,p)=>a+p.x,0)/pts.length;
       const cy2 = pts.reduce((a,p)=>a+p.y,0)/pts.length;
