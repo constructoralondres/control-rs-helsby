@@ -43,14 +43,16 @@ jobs:
           print("Auto-cierre para: " + fecha_str)
           ts_iso = now_chile.isoformat()
 
-          PROJECTS = [
-              {'name': 'helsby',     'db': 'https://control-de-rs-default-rtdb.firebaseio.com'},
-              {'name': 'uribe',      'db': 'https://control-de-rs---armando-uribe-default-rtdb.firebaseio.com'},
-              {'name': 'venturelli', 'db': 'https://control-de-rs---j-venturelli-default-rtdb.firebaseio.com'},
-              {'name': 'maturana',   'db': 'https://control-de-rs---e-maturana-default-rtdb.firebaseio.com'},
-          ]
+          # Cadena interior estandar y la de Uribe, que tiene RF obs. corregidas entremedio
+          KEYS_BASE = ['R0', 'R1F', 'R1', 'RFF', 'RF']
+          KEYS_RFO  = ['R0', 'R1F', 'R1', 'RFF', 'RFO', 'RF']
 
-          STATE_RANK = {'ND': 0, 'R0': 1, 'R1F': 2, 'R1': 3, 'RFF': 4, 'RF': 5}
+          PROJECTS = [
+              {'name': 'helsby',     'keys': KEYS_BASE, 'db': 'https://control-de-rs-default-rtdb.firebaseio.com'},
+              {'name': 'uribe',      'keys': KEYS_RFO,  'db': 'https://control-de-rs---armando-uribe-default-rtdb.firebaseio.com'},
+              {'name': 'venturelli', 'keys': KEYS_BASE, 'db': 'https://control-de-rs---j-venturelli-default-rtdb.firebaseio.com'},
+              {'name': 'maturana',   'keys': KEYS_BASE, 'db': 'https://control-de-rs---e-maturana-default-rtdb.firebaseio.com'},
+          ]
 
           def get_json(url):
               try:
@@ -83,6 +85,9 @@ jobs:
                   return anterior.get('R1') or 0
               if key == 'RFF':
                   return anterior.get('RF') or 0
+              if key == 'RFO':
+                  # Cierres anteriores a este estado: se asume que ocurrio junto con RF recibida
+                  return anterior.get('RF') or 0
               if key in ('R1EF','R1E','RFEF'):
                   # Registros antiguos de patios: se hereda del rango siguiente que exista
                   if 'RFEF' in anterior:
@@ -93,6 +98,11 @@ jobs:
           for proj in PROJECTS:
               name = proj['name']
               db = proj['db']
+              keys_int = proj['keys']
+              # rango de cada estado segun la cadena de ESTE proyecto
+              state_rank = {'ND': 0}
+              for i, k in enumerate(keys_int):
+                  state_rank[k] = i + 1
               print("\n--- " + name + " ---")
               try:
                   cierres = get_json(db + '/' + name + '/cierres.json') or {}
@@ -104,15 +114,14 @@ jobs:
                   houses = get_json(db + '/' + name + '/v2.json') or {}
                   patios = get_json(db + '/' + name + '/patios.json') or {}
 
-                  actual = {'R0': 0, 'R1F': 0, 'R1': 0, 'RFF': 0, 'RF': 0, 'R1EF': 0, 'R1E': 0, 'RFEF': 0, 'RFE': 0, 'DOM': 0,
+                  actual = {'R1EF': 0, 'R1E': 0, 'RFEF': 0, 'RFE': 0, 'DOM': 0,
                              'PP': 0, 'PE': 0, 'PG': 0, 'PEL': 0}
+                  for k in keys_int:
+                      actual[k] = 0
                   for h in houses.values():
-                      rank = STATE_RANK.get(h.get('state', 'ND'), 0)
-                      if rank >= 1: actual['R0'] += 1
-                      if rank >= 2: actual['R1F'] += 1
-                      if rank >= 3: actual['R1'] += 1
-                      if rank >= 4: actual['RFF'] += 1
-                      if rank >= 5: actual['RF'] += 1
+                      rank = state_rank.get(h.get('state', 'ND'), 0)
+                      for i, k in enumerate(keys_int):
+                          if rank >= i + 1: actual[k] += 1
                       if h.get('dom'): actual['DOM'] += 1
                       # Pruebas (independientes entre si y del avance de Rs)
                       if h.get('pp'):  actual['PP']  += 1
@@ -138,7 +147,8 @@ jobs:
                       key=lambda c: fecha_to_dt(c.get('fecha',''))
                   )
                   anterior = lab[-1].get('acumulado', {}) if lab else {}
-                  delta = {k: actual[k] - prev_val(anterior, k) for k in ['R0','R1F','R1','RFF','RF','R1EF','R1E','RFEF','RFE','DOM','PP','PE','PG','PEL']}
+                  claves = keys_int + ['R1EF','R1E','RFEF','RFE','DOM','PP','PE','PG','PEL']
+                  delta = {k: actual[k] - prev_val(anterior, k) for k in claves}
                   print("  Delta: " + str(delta))
 
                   result = post_json(db + '/' + name + '/cierres.json', {
