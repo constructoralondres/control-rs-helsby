@@ -46,12 +46,17 @@ jobs:
           # Cadena interior estandar y la de Uribe, que tiene RF obs. corregidas entremedio
           KEYS_BASE = ['R0', 'R1F', 'R1', 'RFF', 'RF']
           KEYS_RFO  = ['R0', 'R1F', 'R1', 'RFF', 'RFO', 'RF']
+          # Helsby suma los estados "obs. subsanadas por revisar"
+          KEYS_SUBS = ['R0', 'R1F', 'R1S', 'R1', 'RFF', 'RFS', 'RF']
+          # Cadena de patios: la estandar y la de Helsby con subsanadas
+          PAT_BASE = ['R1EF', 'R1E', 'RFEF', 'RFE']
+          PAT_SUBS = ['R1EF', 'R1ES', 'R1E', 'RFEF', 'RFES', 'RFE']
 
           PROJECTS = [
-              {'name': 'helsby',     'keys': KEYS_BASE, 'db': 'https://control-de-rs-default-rtdb.firebaseio.com'},
-              {'name': 'uribe',      'keys': KEYS_RFO,  'db': 'https://control-de-rs---armando-uribe-default-rtdb.firebaseio.com'},
-              {'name': 'venturelli', 'keys': KEYS_BASE, 'db': 'https://control-de-rs---j-venturelli-default-rtdb.firebaseio.com'},
-              {'name': 'maturana',   'keys': KEYS_BASE, 'db': 'https://control-de-rs---e-maturana-default-rtdb.firebaseio.com'},
+              {'name': 'helsby',     'keys': KEYS_SUBS, 'pat': PAT_SUBS, 'db': 'https://control-de-rs-default-rtdb.firebaseio.com'},
+              {'name': 'uribe',      'keys': KEYS_RFO,  'pat': PAT_BASE, 'db': 'https://control-de-rs---armando-uribe-default-rtdb.firebaseio.com'},
+              {'name': 'venturelli', 'keys': KEYS_BASE, 'pat': PAT_BASE, 'db': 'https://control-de-rs---j-venturelli-default-rtdb.firebaseio.com'},
+              {'name': 'maturana',   'keys': KEYS_BASE, 'pat': PAT_BASE, 'db': 'https://control-de-rs---e-maturana-default-rtdb.firebaseio.com'},
           ]
 
           def get_json(url):
@@ -85,9 +90,15 @@ jobs:
                   return anterior.get('R1') or 0
               if key == 'RFF':
                   return anterior.get('RF') or 0
-              if key == 'RFO':
+              if key in ('RFO', 'RFS'):
                   # Cierres anteriores a este estado: se asume que ocurrio junto con RF recibida
                   return anterior.get('RF') or 0
+              if key == 'R1S':
+                  return anterior.get('R1') or 0
+              if key == 'R1ES':
+                  return anterior.get('R1E') or 0
+              if key == 'RFES':
+                  return anterior.get('RFE') or 0
               if key in ('R1EF','R1E','RFEF'):
                   # Registros antiguos de patios: se hereda del rango siguiente que exista
                   if 'RFEF' in anterior:
@@ -99,6 +110,10 @@ jobs:
               name = proj['name']
               db = proj['db']
               keys_int = proj['keys']
+              keys_pat = proj['pat']
+              # campo de Firebase que marca cada rango de patio
+              CAMPO_PAT = {'R1EF': 'r1ExtF', 'R1ES': 'r1ExtS', 'R1E': 'r1Ext',
+                           'RFEF': 'rfExtF', 'RFES': 'rfExtS', 'RFE': 'rfExt'}
               # rango de cada estado segun la cadena de ESTE proyecto
               state_rank = {'ND': 0}
               for i, k in enumerate(keys_int):
@@ -114,9 +129,10 @@ jobs:
                   houses = get_json(db + '/' + name + '/v2.json') or {}
                   patios = get_json(db + '/' + name + '/patios.json') or {}
 
-                  actual = {'R1EF': 0, 'R1E': 0, 'RFEF': 0, 'RFE': 0, 'DOM': 0,
-                             'PP': 0, 'PE': 0, 'PG': 0, 'PEL': 0}
+                  actual = {'DOM': 0, 'PP': 0, 'PE': 0, 'PG': 0, 'PEL': 0}
                   for k in keys_int:
+                      actual[k] = 0
+                  for k in keys_pat:
                       actual[k] = 0
                   for h in houses.values():
                       rank = state_rank.get(h.get('state', 'ND'), 0)
@@ -130,16 +146,15 @@ jobs:
                       if h.get('pel'): actual['PEL'] += 1
                   # Patios: cadena acumulativa R1 Ext Fichaje -> R1 Ext Recibido -> RF Ext Fichaje -> RF Ext Recibido
                   def patio_rank(p):
-                      if p.get('rfExt'):  return 4
-                      if p.get('rfExtF'): return 3
-                      if p.get('r1Ext'):  return 2
-                      if p.get('r1ExtF'): return 1
-                      return 0
+                      # el rango es el ultimo campo marcado de la cadena de ESTE proyecto
+                      r = 0
+                      for i, k in enumerate(keys_pat):
+                          if p.get(CAMPO_PAT[k]):
+                              r = i + 1
+                      return r
                   rangos = [patio_rank(p) for p in patios.values()]
-                  actual['R1EF'] = sum(1 for r in rangos if r >= 1)
-                  actual['R1E']  = sum(1 for r in rangos if r >= 2)
-                  actual['RFEF'] = sum(1 for r in rangos if r >= 3)
-                  actual['RFE']  = sum(1 for r in rangos if r >= 4)
+                  for i, k in enumerate(keys_pat):
+                      actual[k] = sum(1 for r in rangos if r >= i + 1)
                   print("  Actual: " + str(actual))
 
                   lab = sorted(
@@ -147,7 +162,7 @@ jobs:
                       key=lambda c: fecha_to_dt(c.get('fecha',''))
                   )
                   anterior = lab[-1].get('acumulado', {}) if lab else {}
-                  claves = keys_int + ['R1EF','R1E','RFEF','RFE','DOM','PP','PE','PG','PEL']
+                  claves = keys_int + keys_pat + ['DOM','PP','PE','PG','PEL']
                   delta = {k: actual[k] - prev_val(anterior, k) for k in claves}
                   print("  Delta: " + str(delta))
 
