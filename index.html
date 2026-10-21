@@ -1553,11 +1553,21 @@ window.setVista = (v) => {
   document.getElementById('tab-eq').classList.toggle('active', v==='equipos');
   const tpr = document.getElementById('tab-pr');
   if (tpr) tpr.classList.toggle('active', v==='pruebas');
+  const tre = document.getElementById('tab-res');
+  if (tre) tre.classList.toggle('active', v==='resumen');
+  // Resumen: franja de totales y leyenda a lo ancho, sin panel lateral
+  const rk = document.getElementById('resumen-kpis');
+  const rl = document.getElementById('resumen-leyenda');
+  if (rk) rk.style.display = v==='resumen' ? 'flex' : 'none';
+  if (rl) rl.style.display = v==='resumen' ? 'flex' : 'none';
+  const sb = document.getElementById('sidebar');
+  if (sb) sb.style.display = v==='resumen' ? 'none' : '';
+  if (v==='resumen') pintarResumen();
   document.getElementById('fases-bar').style.display = v==='equipos' ? 'flex' : 'none';
   const rsbar = document.getElementById('rs-fases-bar');
   if (rsbar) rsbar.style.display = v==='rs' ? 'flex' : 'none';
   const bay = document.getElementById('btn-ayer');
-  if (bay) bay.style.display = v==='equipos' ? 'none' : 'flex';
+  if (bay) bay.style.display = (v==='equipos' || v==='resumen') ? 'none' : 'flex';
   const pbar = document.getElementById('pruebas-bar');
   if (pbar) pbar.style.display = v==='pruebas' ? 'flex' : 'none';
   document.getElementById('panel-rs').style.display = v==='rs' ? 'block' : 'none';
@@ -1643,6 +1653,7 @@ function showEqCtxMenu(mx,my,o,tipo){
 function draw() {
   if (vista === 'equipos') { drawEquipos(); return; }
   if (vista === 'pruebas') { drawPruebas(); return; }
+  modoResumen = (vista === 'resumen');
   calcDiasPrevios();
   const _nPrevio = [0,0,0];
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1995,7 +2006,7 @@ function hitTest(cx,cy) {
 
 // ── Eventos canvas ────────────────────────────────────
 canvas.addEventListener('click', e => {
-  if (vista === 'equipos' || vista === 'pruebas') return; // fuera de Rs no se dibuja ni pega
+  if (vista !== 'rs') return; // fuera de Rs no se dibuja ni pega
   const r=canvas.getBoundingClientRect();
   const cx=e.clientX-r.left, cy=e.clientY-r.top;
   if(mode==='paste-patio'&&isAdmin&&copiedPatio){
@@ -2522,6 +2533,7 @@ window.setMode=m=>{
   const mobCerrar = document.getElementById('mob-btn-cerrar');
   if (vista === 'equipos') updateEqStats(); // refrescar ayuda/permisos del panel de equipos
   if (vista === 'pruebas') updatePrStats(); // ídem para el panel de pruebas
+  if (vista === 'resumen') pintarResumen();
   const conSesion = isAdmin || isTerreno || isProfT;
   if(mobIngresar) mobIngresar.style.display = conSesion ? 'none' : 'flex';
   if(mobSalir) mobSalir.style.display = conSesion ? 'flex' : 'none';
