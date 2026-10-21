@@ -232,7 +232,6 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
 <!-- Pestañas: Control de Rs / Equipos -->
 <div id="tabs-bar">
   <button id="tab-rs" class="tab-btn active" onclick="setVista('rs')">📋 Control de Rs</button>
-  <button id="tab-eq" class="tab-btn" onclick="setVista('equipos')">👷 Equipos</button>
   <button id="tab-pr" class="tab-btn" onclick="setVista('pruebas')">🧪 Pruebas</button>
   <button id="tab-res" class="tab-btn" onclick="setVista('resumen')">📈 Resumen</button>
 </div>
@@ -244,14 +243,6 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
   <button class="fase-btn" id="rsf-R1E" onclick="setFaseRs('R1E')">R1 Exterior</button>
   <button class="fase-btn" id="rsf-RFE" onclick="setFaseRs('RFE')">RF Exterior</button>
   <button class="fase-btn" id="rsf-DOM" onclick="setFaseRs('DOM')">🏛 DOM</button>
-</div>
-<!-- Selector de fase (solo en la vista Equipos) -->
-<div id="fases-bar" style="display:none">
-  <span style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;margin-right:4px">Fase</span>
-  <button class="fase-btn active" id="fase-R1I" onclick="setFaseEq('R1I')">R1 Interior</button>
-  <button class="fase-btn" id="fase-RFI" onclick="setFaseEq('RFI')">RF Interior</button>
-  <button class="fase-btn" id="fase-R1E" onclick="setFaseEq('R1E')">R1 Exterior</button>
-  <button class="fase-btn" id="fase-RFE" onclick="setFaseEq('RFE')">RF Exterior</button>
 </div>
 <!-- Selector de prueba (solo en la vista Pruebas) -->
 <div id="pruebas-bar" style="display:none">
@@ -392,29 +383,6 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
       </button>
     </div>
     </div><!-- /panel-rs -->
-
-    <!-- Panel de la vista Equipos -->
-    <div id="panel-eq" style="display:none;flex-direction:column;gap:10px">
-      <div class="stitle">Equipos — <span id="eq-fase-nombre">R1 Interior</span></div>
-      <div id="eq-leyenda" style="display:flex;flex-direction:column;gap:5px"></div>
-      <div style="height:1px;background:#eee"></div>
-      <div class="stitle">Simbología</div>
-      <div style="display:flex;flex-direction:column;gap:5px;font-size:11px;color:#555">
-        <div style="display:flex;align-items:center;gap:8px">
-          <svg width="28" height="18"><rect x="2" y="2" width="24" height="14" fill="rgba(30,136,229,0.12)" stroke="#1E88E5" stroke-width="2.5" stroke-dasharray="4,3"></rect></svg>
-          Trabajando
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <svg width="28" height="18"><rect x="2" y="2" width="24" height="14" fill="rgba(30,136,229,0.45)" stroke="#1E88E5" stroke-width="2.5"></rect></svg>
-          Completado
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <svg width="28" height="18"><rect x="2" y="2" width="24" height="14" fill="rgba(158,158,158,0.5)" stroke="#9E9E9E" stroke-width="2.5"></rect></svg>
-          Ya completado (avance Rs)
-        </div>
-      </div>
-      <div id="eq-ayuda" style="font-size:11px;color:#aaa;line-height:1.4"></div>
-    </div>
 
     <!-- Panel de la vista Pruebas -->
     <div id="panel-pr" style="display:none;flex-direction:column;gap:10px">
@@ -673,7 +641,6 @@ const dbRef = ref(db, 'helsby/v2');
 
 const ADMIN_PIN = "applondres1";
 const TERRENO_PIN = "1234calidad";   // Encargado de Calidad → llena Rs
-const PROFT_PIN = "1234terreno";     // Profesional de Terreno → llena Equipos
 const IMG_W = 2400, IMG_H = 1697;
 
 // Grosor base del contorno (en px de pantalla)
@@ -1440,16 +1407,12 @@ function pintarResumen(){
   const c = getCounts();
   const kpis = document.getElementById('resumen-kpis');
   if (kpis){
-    const pct = c.total ? Math.round(c.RF * 100 / c.total) : 0;
     kpis.innerHTML = RES_KPIS.map(k => {
       const val = k.total ? c.total : (c[k.k] || 0);
       return `<div class="kpi${k.total?' kpi-total':''}">
         <div class="kpi-n" style="${k.total?'':'color:'+k.col}">${val}</div>
         <div class="kpi-l">${k.label}</div></div>`;
     }).join('')
-    + `<div class="kpi" style="background:#EAF3DE;border-color:#cfe0b8">
-        <div class="kpi-n" style="color:#27500A">${pct}%</div>
-        <div class="kpi-l">Avance a RF Int.</div></div>`
     + `<div style="display:flex;align-items:center;padding-left:4px"><button id="btn-png" onclick="descargarResumen()">⬇ Descargar PNG</button></div>`;
   }
   const ley = document.getElementById('resumen-leyenda');
@@ -1494,9 +1457,7 @@ window.descargarResumen = () => {
 
     // Totales
     const c = getCounts();
-    const pct = c.total ? Math.round(c.RF * 100 / c.total) : 0;
     const cajas = RES_KPIS.map(k => ({ n: k.total ? c.total : (c[k.k]||0), l: k.label, col: k.total ? '#fff' : k.col, bg: k.total ? '#1a1a2e' : '#fff' }));
-    cajas.push({ n: pct + '%', l: 'Avance a RF Int.', col: '#27500A', bg: '#EAF3DE' });
     const gap = 8, m = 16;
     const bw = (W - m*2 - gap*(cajas.length-1)) / cajas.length;
     cajas.forEach((b, i) => {
@@ -1554,7 +1515,6 @@ window.setVista = (v) => {
   apagarAyer();
   vista = v;
   document.getElementById('tab-rs').classList.toggle('active', v==='rs');
-  document.getElementById('tab-eq').classList.toggle('active', v==='equipos');
   const tpr = document.getElementById('tab-pr');
   if (tpr) tpr.classList.toggle('active', v==='pruebas');
   const tre = document.getElementById('tab-res');
@@ -1567,7 +1527,6 @@ window.setVista = (v) => {
   const sb = document.getElementById('sidebar');
   if (sb) sb.style.display = v==='resumen' ? 'none' : '';
   if (v==='resumen'){ pintarResumen(); setTimeout(resetView, 30); }
-  document.getElementById('fases-bar').style.display = v==='equipos' ? 'flex' : 'none';
   const rsbar = document.getElementById('rs-fases-bar');
   if (rsbar) rsbar.style.display = v==='rs' ? 'flex' : 'none';
   const bay = document.getElementById('btn-ayer');
@@ -1575,7 +1534,6 @@ window.setVista = (v) => {
   const pbar = document.getElementById('pruebas-bar');
   if (pbar) pbar.style.display = v==='pruebas' ? 'flex' : 'none';
   document.getElementById('panel-rs').style.display = v==='rs' ? 'block' : 'none';
-  document.getElementById('panel-eq').style.display = v==='equipos' ? 'flex' : 'none';
   const ppan = document.getElementById('panel-pr');
   if (ppan) ppan.style.display = v==='pruebas' ? 'flex' : 'none';
   const simb = document.getElementById('simb-panel');
@@ -1588,9 +1546,7 @@ window.setVista = (v) => {
   if (mpr) mpr.style.display = v==='pruebas' ? 'flex' : 'none';
   // (los filtros móviles viven en los chips de #mobile-stats, que ya se ocultan arriba)
   const lbl = document.getElementById('mobile-house-label');
-  if (lbl) lbl.textContent = v==='equipos'
-    ? (puedeEquipos() ? 'Mantén presionada una vivienda o patio para asignar equipo' : 'Vista de equipos (solo lectura)')
-    : v==='pruebas'
+  if (lbl) lbl.textContent = v==='pruebas'
     ? (puedePruebas() ? 'Mantén presionada una vivienda para marcar sus pruebas' : 'Vista de pruebas (solo lectura)')
     : 'Mantén presionada una vivienda para marcar su estado';
   ctxMenu.style.display='none';
@@ -2444,15 +2400,6 @@ window.modalOk=()=>{
       document.getElementById('modal').style.display='none';
       setMode('view');
       showToast('✅ Perfil Encargado de Calidad activado','#27500A');
-    } else if(val===PROFT_PIN){
-      isProfT=true; isAdmin=false; isTerreno=false;
-      document.getElementById('btn-acceso').style.display='none';
-      document.getElementById('btn-cerrar-dia').style.display='none';
-      document.getElementById('btn-salir-terreno').style.display='block';
-      document.getElementById('modal').style.display='none';
-      setVista('equipos');   // este perfil trabaja en la pestaña Equipos
-      setMode('view');
-      showToast('✅ Perfil Profesional de Terreno activado','#B25000');
     } else { alert('PIN incorrecto'); document.getElementById('modal-input').value=''; }
   } else if(modalAction==='num'){
     if(!val){ alert('Ingresa un número o código'); return; }
