@@ -1466,7 +1466,11 @@ window.descargarResumen = () => {
 
   setTimeout(() => {
     const ov = document.getElementById('overlay');
-    const W = ov.width;
+    // Recortar el aire que queda a los lados del plano
+    const anchoPlano = IMG_W * scale;
+    const margen = 14;
+    const corte = Math.max(0, Math.min(offX - margen, ov.width - anchoPlano - margen*2));
+    const W = Math.round(Math.min(ov.width, anchoPlano + margen*2));
     const hEnc = Math.round(W * 0.042);
     const hKpi = Math.round(W * 0.062);
     const hLey = Math.round(W * 0.032);
@@ -1511,8 +1515,8 @@ window.descargarResumen = () => {
     // Plano + polígonos
     const yPlano = hEnc + hKpi;
     g.fillStyle = '#e8e4dc'; g.fillRect(0, yPlano, W, ov.height);
-    g.drawImage(document.getElementById('plano'), offX, yPlano + offY, IMG_W*scale, IMG_H*scale);
-    g.drawImage(ov, 0, yPlano);
+    g.drawImage(document.getElementById('plano'), offX - corte, yPlano + offY, anchoPlano, IMG_H*scale);
+    g.drawImage(ov, corte, 0, W, ov.height, 0, yPlano, W, ov.height);
 
     // Leyenda, desde el mismo SVG que se ve en pantalla
     const yLey = yPlano + ov.height;
@@ -1562,7 +1566,7 @@ window.setVista = (v) => {
   if (rl) rl.style.display = v==='resumen' ? 'flex' : 'none';
   const sb = document.getElementById('sidebar');
   if (sb) sb.style.display = v==='resumen' ? 'none' : '';
-  if (v==='resumen') pintarResumen();
+  if (v==='resumen'){ pintarResumen(); setTimeout(resetView, 30); }
   document.getElementById('fases-bar').style.display = v==='equipos' ? 'flex' : 'none';
   const rsbar = document.getElementById('rs-fases-bar');
   if (rsbar) rsbar.style.display = v==='rs' ? 'flex' : 'none';
