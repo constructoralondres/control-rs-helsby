@@ -19,6 +19,8 @@ body{font-family:system-ui,sans-serif;background:#f5f3ef;height:100vh;display:fl
 .rep-fase{font-weight:800;color:#1a1a2e;text-align:center;background:#fafaf8;padding:3px 10px}
 .rep-l{color:#444;white-space:nowrap}
 .rep-n{font-weight:700;color:#1a1a2e;text-align:center;min-width:34px}
+.rep-vacio{font-size:11px;color:#aaa;padding:6px 2px}
+.rep-pie{font-size:9px;color:#aaa;margin-top:6px;max-width:260px;line-height:1.35}
 @media (max-width: 768px){ #resumen-reporte{ right:6px; top:auto; bottom:6px; padding:7px 8px } .rep-tabla{font-size:9.5px} .rep-tabla td{padding:2px 5px} }
 #resumen-kpis{gap:8px;flex-wrap:wrap;padding:10px 14px;background:#fff;border-bottom:1px solid #e0ddd6;flex-shrink:0}
 .kpi{flex:1 1 92px;min-width:92px;background:#fff;border:1px solid #e6e2d8;border-radius:10px;padding:8px 6px;text-align:center}
@@ -709,6 +711,7 @@ let houses = {}, mode = 'view', isAdmin = false, isTerreno = false, isProfT = fa
 // Quién puede asignar equipos: Admin y Profesional de Terreno
 const puedeEquipos = () => isAdmin || isProfT;
 let lastCierreDate = ''; // fecha del último cierre (YYYY-MM-DD)
+let ultimoCierre = null;  // registro completo del último cierre, para el reporte diario
 let filters = new Set(['R0','R1F','R1S','R1','RFF','RFS','RF','ND','R1EF','R1ES','R1E','RFEF','RFES','RFE','DOM']);
 let scale = 1, offX = 0, offY = 0;
 let panning = false, panSt = {x:0,y:0};
@@ -1436,11 +1439,34 @@ const RES_KPIS = [
 ];
 // Cuadro de reporte diario: INTERIOR/EXTERIOR x R1/RF
 const REPORTE = [
-  { grupo:'INTERIOR', fase:'R1', filas:[['Fichaje','R1F'],['Entregadas por obra','R1S'],['Recibidas','R1']] },
-  { grupo:'INTERIOR', fase:'RF', filas:[['Fichadas por ITO','RFF'],['Entregadas por obra','RFS'],['Recibidas por ITO','RF']] },
-  { grupo:'EXTERIOR', fase:'R1', filas:[['Fichaje','R1EF'],['Entregadas por obra','R1ES'],['Recibidas','R1E']] },
-  { grupo:'EXTERIOR', fase:'RF', filas:[['Fichadas por ITO','RFEF'],['Entregadas por obra','RFES'],['Recibidas por ITO','RFE']] },
+  { grupo:'INTERIOR', fase:'R1', f:'R1F',  s:'R1S',  r:'R1',  txt:['Fichaje','Entregadas por obra','Recibidas'] },
+  { grupo:'INTERIOR', fase:'RF', f:'RFF',  s:'RFS',  r:'RF',  txt:['Fichadas por ITO','Entregadas por obra','Recibidas por ITO'] },
+  { grupo:'EXTERIOR', fase:'R1', f:'R1EF', s:'R1ES', r:'R1E', txt:['Fichaje','Entregadas por obra','Recibidas'] },
+  { grupo:'EXTERIOR', fase:'RF', f:'RFEF', s:'RFES', r:'RFE', txt:['Fichadas por ITO','Entregadas por obra','Recibidas por ITO'] },
 ];
+
+// Arma las filas del reporte a partir del último cierre.
+// Fichaje y Recibidas son el avance DE ESE DÍA; "Entregadas por obra" es el saldo:
+// lo que quedó pendiente de recibir más lo que se recibió ese día.
+function filasReporte(){
+  const ci = ultimoCierre;
+  const d = (ci && ci.delta) || {};
+  const a = (ci && ci.acumulado) || {};
+  const num = (o,k) => (o[k] === undefined ? null : (o[k] || 0));
+  return REPORTE.map(b => {
+    const recibidas = num(d, b.r);
+    // pendientes al cierre = los que llegaron a "entregadas" y aún no se reciben
+    const acumS = a[b.s], acumR = a[b.r];
+    const pendientes = (acumS === undefined || acumR === undefined) ? null : Math.max(0, acumS - acumR);
+    const entregadas = (pendientes === null || recibidas === null) ? null : pendientes + recibidas;
+    return { ...b, valores: [num(d, b.f), entregadas, recibidas], saldo: pendientes };
+  });
+}
+function fechaCierreCorta(){
+  if (!ultimoCierre || !ultimoCierre.fecha) return '';
+  const [dd,mm,yy] = ultimoCierre.fecha.split('/');
+  return `${dd}-${mm}-${yy.slice(2)}`;
+}
 // Leyenda: se arma como un SVG único, que sirve en pantalla y dentro del PNG
 const RES_LEYENDA_TODA = [
   { t:'R0 Interior',        c:'#0C447C', f:'contorno' },
@@ -1501,22 +1527,30 @@ function pintarResumen(){
   }
   const rep = document.getElementById('resumen-reporte');
   if (rep){
-    let f = `<div class="rep-tit">REPORTE DIARIO</div><table class="rep-tabla">`;
-    ['INTERIOR','EXTERIOR'].forEach(gr => {
-      const bloques = REPORTE.filter(b => b.grupo === gr);
-      const filasGrupo = bloques.reduce((a,b) => a + b.filas.length, 0);
-      let primeraDelGrupo = true;
-      bloques.forEach(b => {
-        b.filas.forEach(([txt, key], i) => {
-          f += '<tr>';
-          if (primeraDelGrupo){ f += `<td class="rep-gr" rowspan="${filasGrupo}">${gr}</td>`; primeraDelGrupo = false; }
-          if (i === 0) f += `<td class="rep-fase" rowspan="${b.filas.length}">${b.fase}</td>`;
-          const oculto = esObs(key) && !veObs();
-          f += `<td class="rep-l">${txt}</td><td class="rep-n">${oculto ? '—' : (c[key] || 0)}</td></tr>`;
+    const bloques = filasReporte();
+    const fecha = fechaCierreCorta();
+    let f = `<div class="rep-tit">REPORTE DIARIO${fecha ? '  ' + fecha : ''}</div>`;
+    if (!ultimoCierre){
+      rep.innerHTML = f + '<div class="rep-vacio">Todavía no hay cierres registrados</div>';
+    } else {
+      f += '<table class="rep-tabla">';
+      ['INTERIOR','EXTERIOR'].forEach(gr => {
+        const bs = bloques.filter(b => b.grupo === gr);
+        let primeraDelGrupo = true;
+        bs.forEach(b => {
+          b.txt.forEach((txt, i) => {
+            const key = [b.f, b.s, b.r][i];
+            const oculto = esObs(key) && !veObs();
+            const v = b.valores[i];
+            f += '<tr>';
+            if (primeraDelGrupo){ f += `<td class="rep-gr" rowspan="${bs.length*3}">${gr}</td>`; primeraDelGrupo = false; }
+            if (i === 0) f += `<td class="rep-fase" rowspan="3">${b.fase}</td>`;
+            f += `<td class="rep-l">${txt}</td><td class="rep-n">${oculto || v === null ? '—' : v}</td></tr>`;
+          });
         });
       });
-    });
-    rep.innerHTML = f + '</table>';
+      rep.innerHTML = f + '</table><div class="rep-pie">Avance del día cerrado · «Entregadas por obra» incluye el saldo pendiente de recibir</div>';
+    }
   }
 
 }
@@ -1589,8 +1623,8 @@ window.descargarResumen = () => {
       const wGr = Math.round(fs*1.9), wFase = Math.round(fs*2.4);
       const wL = Math.round(fs*11.5), wN = Math.round(fs*3.2);
       const filas = [];
-      REPORTE.forEach(b => b.filas.forEach(([txt,key],i) =>
-        filas.push({ gr:b.grupo, fase:b.fase, txt, key, primeraFase:i===0 })));
+      filasReporte().forEach(b => b.txt.forEach((txt,i) =>
+        filas.push({ gr:b.grupo, fase:b.fase, txt, key:[b.f,b.s,b.r][i], valor:b.valores[i], primeraFase:i===0 })));
       const wT = wGr + wFase + wL + wN;
       const hT = hFila*filas.length + Math.round(fs*2.2);
       const x0 = W - wT - 16, y0 = yPlano + 16;
@@ -1599,7 +1633,7 @@ window.descargarResumen = () => {
       g.beginPath(); g.roundRect(x0-10, y0-10, wT+20, hT+16, 9); g.fill(); g.stroke();
       g.fillStyle='#1a1a2e'; g.textAlign='left'; g.textBaseline='middle';
       g.font=`800 ${fs}px system-ui`;
-      g.fillText('REPORTE DIARIO', x0, y0 + fs*0.6);
+      g.fillText('REPORTE DIARIO' + (fechaCierreCorta() ? '  ' + fechaCierreCorta() : ''), x0, y0 + fs*0.6);
       const yTabla = y0 + Math.round(fs*2.0);
       g.lineWidth=1; g.strokeStyle='#cfcabd';
       filas.forEach((f,i) => {
@@ -1610,7 +1644,7 @@ window.descargarResumen = () => {
         g.fillText(f.txt, x0 + wGr + wFase + 7, y + hFila/2);
         const oculto = esObs(f.key) && !veObs();
         g.fillStyle='#1a1a2e'; g.font=`700 ${fs}px system-ui`; g.textAlign='center';
-        g.fillText(oculto ? '—' : String(c[f.key] || 0), x0 + wGr + wFase + wL + wN/2, y + hFila/2);
+        g.fillText(oculto || f.valor === null ? '—' : String(f.valor), x0 + wGr + wFase + wL + wN/2, y + hFila/2);
         if (f.primeraFase){
           g.strokeRect(x0 + wGr, y, wFase, hFila*3);
           g.fillStyle='#1a1a2e'; g.font=`800 ${fs}px system-ui`; g.textAlign='center';
@@ -3070,6 +3104,13 @@ onValue(cierreRef, snap => {
   const cierres = snap.val() || {};
   const keys = Object.keys(cierres).sort();
   lastCierreDate = keys.length > 0 ? fechaToISO(cierres[keys[keys.length - 1]].fecha || '') : '';
+  // El reporte diario se arma con el último cierre, así que lo dejamos a mano
+  const ord = Object.values(cierres).filter(c => c.fecha).sort((a,b) => {
+    const f = x => { const [d,m,y] = x.fecha.split('/'); return y+m+d; };
+    return f(a) < f(b) ? -1 : 1;
+  });
+  ultimoCierre = ord.length ? ord[ord.length-1] : null;
+  if (vista === 'resumen') pintarResumen();
 });
 
 function getCounts() {
