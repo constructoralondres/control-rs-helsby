@@ -285,16 +285,16 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
       <div class="stat-row"><span style="color:#666;font-size:12px">Total viviendas</span><strong id="s-total">211</strong></div>
       <div class="stat-row" data-k="R0"><span class="badge b-r0">R0 Interior</span><strong id="s-r0">73</strong></div>
       <div class="stat-row" data-k="R1F"><span class="badge b-r1f">R1 Interior Fichaje</span><strong id="s-r1f">0</strong></div>
-      <div class="stat-row" data-k="R1S"><span class="badge b-r1s">R1 Int. Obs. subsanadas</span><strong id="s-r1s">0</strong></div>
+      <div class="stat-row" data-k="R1S"><span class="badge b-r1s">R1 Int. Entregada por obra</span><strong id="s-r1s">0</strong></div>
       <div class="stat-row" data-k="R1"><span class="badge b-r1">R1 Interior Recibida</span><strong id="s-r1">64</strong></div>
       <div class="stat-row" data-k="RFF"><span class="badge b-rff">RF Interior Fichaje</span><strong id="s-rff">0</strong></div>
-      <div class="stat-row" data-k="RFS"><span class="badge b-rfs">RF Int. Obs. subsanadas</span><strong id="s-rfs">0</strong></div>
+      <div class="stat-row" data-k="RFS"><span class="badge b-rfs">RF Int. Entregada por obra</span><strong id="s-rfs">0</strong></div>
       <div class="stat-row" data-k="RF"><span class="badge b-rf">RF Interior Recibida ✓</span><strong id="s-rf">21</strong></div>
       <div class="stat-row" data-k="R1EF"><span class="badge b-r1ef">R1 Exterior Fichaje</span><strong id="s-r1ef">0</strong></div>
-      <div class="stat-row" data-k="R1ES"><span class="badge b-r1es">R1 Ext. Obs. subsanadas</span><strong id="s-r1es">0</strong></div>
+      <div class="stat-row" data-k="R1ES"><span class="badge b-r1es">R1 Ext. Entregada por obra</span><strong id="s-r1es">0</strong></div>
       <div class="stat-row" data-k="R1E"><span class="badge b-r1e">R1 Exterior Recibido</span><strong id="s-r1e">0</strong></div>
       <div class="stat-row" data-k="RFEF"><span class="badge b-rfef">RF Exterior Fichaje</span><strong id="s-rfef">0</strong></div>
-      <div class="stat-row" data-k="RFES"><span class="badge b-rfes">RF Ext. Obs. subsanadas</span><strong id="s-rfes">0</strong></div>
+      <div class="stat-row" data-k="RFES"><span class="badge b-rfes">RF Ext. Entregada por obra</span><strong id="s-rfes">0</strong></div>
       <div class="stat-row" data-k="RFE"><span class="badge b-rfe">RF Exterior Recibido ✓</span><strong id="s-rfe">0</strong></div>
       <div class="stat-row" data-k="DOM"><span class="badge b-dom">DOM ✓</span><strong id="s-dom">0</strong></div>
       <div class="stat-row" data-k="ND"><span class="badge b-nd">S/D</span><strong id="s-nd">138</strong></div>
@@ -321,7 +321,7 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
         <svg width="28" height="20" style="flex-shrink:0">
           <rect x="2" y="2" width="24" height="16" fill="rgba(0,105,92,0.38)" stroke="#00695C" stroke-width="3"></rect>
         </svg>
-        R1 Int. Obs. subsanadas
+        R1 Int. Entregada por obra
       </button>
       <button class="fbtn active" id="fb-r1" onclick="toggleFilter(&#39;R1&#39;,this)">
         <svg width="28" height="20" style="flex-shrink:0">
@@ -363,7 +363,7 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
         <svg width="28" height="20" style="flex-shrink:0">
           <rect x="2" y="2" width="24" height="16" fill="rgba(108,42,140,0.38)" stroke="#6C2A8C" stroke-width="3"></rect>
         </svg>
-        RF Int. Obs. subsanadas
+        RF Int. Entregada por obra
       </button>
       <button class="fbtn active" id="fb-rf" onclick="toggleFilter(&#39;RF&#39;,this)">
         <svg width="28" height="20" style="flex-shrink:0">
@@ -389,7 +389,7 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
         <svg width="28" height="20" style="flex-shrink:0">
           <rect x="2" y="2" width="24" height="16" fill="rgba(232,130,12,0.38)" stroke="#E8820C" stroke-width="3"></rect>
         </svg>
-        R1 Ext. Obs. subsanadas
+        R1 Ext. Entregada por obra
       </button>
       <button class="fbtn active" id="fb-r1e" onclick="toggleFilter(&#39;R1E&#39;,this)">
         <svg width="28" height="20" style="flex-shrink:0">
@@ -414,7 +414,7 @@ canvas#overlay{position:absolute;top:0;left:0;z-index:10}
         <svg width="28" height="20" style="flex-shrink:0">
           <rect x="2" y="2" width="24" height="16" fill="rgba(245,196,0,0.45)" stroke="#F5C400" stroke-width="3"></rect>
         </svg>
-        RF Ext. Obs. subsanadas
+        RF Ext. Entregada por obra
       </button>
       <button class="fbtn active" id="fb-rfe" onclick="toggleFilter(&#39;RFE&#39;,this)">
         <svg width="28" height="20" style="flex-shrink:0">
@@ -817,7 +817,7 @@ const RS_FASES = {
 const RS_FASE_KEYS = ['R1I','RFI','R1E','RFE','DOM'];
 const enFase = (k) => RS_FASES[faseRs].keys.includes(k);
 
-// Estados "Obs. subsanadas": los marca y los ve solo Calidad (y el Admin).
+// Estados "Entregada por obra": los marca y los ve solo Calidad (y el Admin).
 // Para el resto la cadena se ve como antes, sin el paso intermedio.
 const OBS_KEYS = ['R1S','RFS','R1ES','RFES'];
 const veObs = () => isAdmin || isTerreno;
@@ -1425,16 +1425,16 @@ const RES_KPIS = [
   { k:'total', label:'Total viviendas', col:'#fff',    total:true },
   { k:'R0',    label:'R0 Interior',      col:'#0C447C', sw:'#0C447C', f:'contorno' },
   { k:'R1F',   label:'R1 Int. Fichaje',  col:'#00695C', sw:'#00695C', f:'aspa' },
-  { k:'R1S',   label:'R1 Int. Subsan.',  col:'#00554A', sw:'#00695C', f:'medio', obs:true },
+  { k:'R1S',   label:'R1 Int. Entregada',  col:'#00554A', sw:'#00695C', f:'medio', obs:true },
   { k:'R1',    label:'R1 Int. Recibida', col:'#27500A', sw:'#27500A', f:'malla' },
   { k:'RFF',   label:'RF Int. Fichaje',  col:'#6C2A8C', sw:'#6C2A8C', f:'circulo' },
-  { k:'RFS',   label:'RF Int. Subsan.',  col:'#54207A', sw:'#6C2A8C', f:'medio', obs:true },
+  { k:'RFS',   label:'RF Int. Entregada',  col:'#54207A', sw:'#6C2A8C', f:'medio', obs:true },
   { k:'RF',    label:'RF Int. Recibida', col:'#1a1a2e', sw:'#1a1a2e', f:'tick' },
   { k:'R1EF',  label:'R1 Ext. Fichaje',  col:'#A85A00', sw:'#A85A00', f:'punteado' },
-  { k:'R1ES',  label:'R1 Ext. Subsan.',  col:'#8A4D00', sw:'#E8820C', f:'medio', obs:true },
+  { k:'R1ES',  label:'R1 Ext. Entregada',  col:'#8A4D00', sw:'#E8820C', f:'medio', obs:true },
   { k:'R1E',   label:'R1 Ext. Recibido', col:'#8a7000', sw:'#8a7000', f:'achurado' },
   { k:'RFEF',  label:'RF Ext. Fichaje',  col:'#7a6000', sw:'#7a6000', f:'grueso' },
-  { k:'RFES',  label:'RF Ext. Subsan.',  col:'#6B5600', sw:'#F5C400', f:'medio', obs:true },
+  { k:'RFES',  label:'RF Ext. Entregada',  col:'#6B5600', sw:'#F5C400', f:'medio', obs:true },
   { k:'RFE',   label:'RF Ext. Recibido', col:'#5C4A00', sw:'#5C4A00', f:'solido' },
 ];
 // Cuadro de reporte diario: INTERIOR/EXTERIOR x R1/RF
@@ -1471,16 +1471,16 @@ function fechaCierreCorta(){
 const RES_LEYENDA_TODA = [
   { t:'R0 Interior',        c:'#0C447C', f:'contorno' },
   { t:'R1 Int. Fichaje',    c:'#00695C', f:'aspa' },
-  { t:'R1 Int. Subsanadas', c:'#00695C', f:'medio', obs:true },
+  { t:'R1 Int. Entregada', c:'#00695C', f:'medio', obs:true },
   { t:'R1 Int. Recibida',   c:'#27500A', f:'malla' },
   { t:'RF Int. Fichaje',    c:'#6C2A8C', f:'circulo' },
-  { t:'RF Int. Subsanadas', c:'#6C2A8C', f:'medio', obs:true },
+  { t:'RF Int. Entregada', c:'#6C2A8C', f:'medio', obs:true },
   { t:'RF Int. Recibida',   c:'#1a1a2e', f:'tick' },
   { t:'R1 Ext. Fichaje',    c:'#A85A00', f:'punteado' },
-  { t:'R1 Ext. Subsanadas', c:'#E8820C', f:'medio', obs:true },
+  { t:'R1 Ext. Entregada', c:'#E8820C', f:'medio', obs:true },
   { t:'R1 Ext. Recibido',   c:'#8a7000', f:'achurado' },
   { t:'RF Ext. Fichaje',    c:'#7a6000', f:'grueso' },
-  { t:'RF Ext. Subsanadas', c:'#F5C400', f:'medio', obs:true },
+  { t:'RF Ext. Entregada', c:'#F5C400', f:'medio', obs:true },
   { t:'RF Ext. Recibido',   c:'#5C4A00', f:'solido' },
   { t:'Sin estado',         c:'#aaa',    f:'vacio' },
 ];
@@ -1539,13 +1539,11 @@ function pintarResumen(){
         let primeraDelGrupo = true;
         bs.forEach(b => {
           b.txt.forEach((txt, i) => {
-            const key = [b.f, b.s, b.r][i];
-            const oculto = esObs(key) && !veObs();
             const v = b.valores[i];
             f += '<tr>';
             if (primeraDelGrupo){ f += `<td class="rep-gr" rowspan="${bs.length*3}">${gr}</td>`; primeraDelGrupo = false; }
             if (i === 0) f += `<td class="rep-fase" rowspan="3">${b.fase}</td>`;
-            f += `<td class="rep-l">${txt}</td><td class="rep-n">${oculto || v === null ? '—' : v}</td></tr>`;
+            f += `<td class="rep-l">${txt}</td><td class="rep-n">${v === null ? '—' : v}</td></tr>`;
           });
         });
       });
@@ -1642,9 +1640,8 @@ window.descargarResumen = () => {
         g.strokeRect(x0 + wGr + wFase + wL, y, wN, hFila);
         g.fillStyle='#444'; g.font=`${fs}px system-ui`; g.textAlign='left';
         g.fillText(f.txt, x0 + wGr + wFase + 7, y + hFila/2);
-        const oculto = esObs(f.key) && !veObs();
         g.fillStyle='#1a1a2e'; g.font=`700 ${fs}px system-ui`; g.textAlign='center';
-        g.fillText(oculto || f.valor === null ? '—' : String(f.valor), x0 + wGr + wFase + wL + wN/2, y + hFila/2);
+        g.fillText(f.valor === null ? '—' : String(f.valor), x0 + wGr + wFase + wL + wN/2, y + hFila/2);
         if (f.primeraFase){
           g.strokeRect(x0 + wGr, y, wFase, hFila*3);
           g.fillStyle='#1a1a2e'; g.font=`800 ${fs}px system-ui`; g.textAlign='center';
@@ -1860,7 +1857,7 @@ function draw() {
       ctx.restore();
     }
 
-    // ── R1S: obs. subsanadas por revisar — relleno medio del color de R1 fichaje ──
+    // ── R1S: entregada por obra — relleno medio del color de R1 fichaje ──
     if (rank >= 3 && verEstado('R1S')) {
       tracePath();
       ctx.fillStyle = eqRgba(COL_R1F, 0.38);
@@ -1937,7 +1934,7 @@ function draw() {
       ctx.stroke();
     }
 
-    // ── RFS: obs. subsanadas por revisar — relleno medio del color de RF fichaje ──
+    // ── RFS: entregada por obra — relleno medio del color de RF fichaje ──
     if (rank >= 6 && verEstado('RFS')) {
       tracePath();
       ctx.fillStyle = eqRgba(COL_RFF, 0.38);
@@ -2138,7 +2135,7 @@ function draw() {
         ctx.setLineDash([]);
       }
 
-      // ── R1 Ext obs. subsanadas: relleno medio naranjo ──
+      // ── R1 Ext entregada por obra: relleno medio naranjo ──
       if (rk >= 2 && verEstado('R1ES')) {
         tracePatio();
         ctx.fillStyle = eqRgba(COL_R1E, 0.38);
@@ -2151,7 +2148,7 @@ function draw() {
         ctx.stroke();
       }
 
-      // ── RF Ext obs. subsanadas: relleno medio amarillo ──
+      // ── RF Ext entregada por obra: relleno medio amarillo ──
       if (rk >= 5 && verEstado('RFES')) {
         tracePatio();
         ctx.fillStyle = eqRgba(COL_RFE, 0.45);
@@ -2363,7 +2360,7 @@ canvas.addEventListener('mousemove', e=>{
   if(h){
     canvas.style.cursor=mode==='move'&&isAdmin?'grab':'pointer';
     const st=h.state||'ND';
-    const stLabel={R0:'R0 Interior — Revisión 0',R1F:'R1 Interior — Fichaje',R1S:'R1 Int. — Obs. subsanadas por revisar',R1:'R1 Interior — Recibida',RFF:'RF Interior — Fichaje',RFS:'RF Int. — Obs. subsanadas por revisar',RF:'RF Interior — Recibida',ND:'Sin estado'}[st];
+    const stLabel={R0:'R0 Interior — Revisión 0',R1F:'R1 Interior — Fichaje',R1S:'R1 Int. — Entregada por obra',R1:'R1 Interior — Recibida',RFF:'RF Interior — Fichaje',RFS:'RF Int. — Entregada por obra',RF:'RF Interior — Recibida',ND:'Sin estado'}[st];
     const tipoObj = h.tipo ? TIPOLOGIAS.find(t=>t.id===h.tipo) : null;
     const tipoHtml = tipoObj
       ? `<br><span style="font-size:10px;display:flex;align-items:center;gap:4px;margin-top:3px"><span style="width:8px;height:8px;background:${tipoObj.color};border-radius:2px;display:inline-block;flex-shrink:0"></span><span style="color:#666">${tipoObj.label}</span></span>`
@@ -2505,10 +2502,10 @@ function showCtxMenu(mx,my,h){
   // Solo se puede marcar lo que corresponde a la sub-pestaña activa
   [['R0','🔵 Marcar R0'],
    ['R1F','📝 Marcar R1 Interior Fichaje'],
-   ['R1S','📤 Marcar R1 int obs subsanadas por revisar'],
+   ['R1S','📤 Marcar R1 Int. Entregada por obra'],
    ['R1','🟢 Marcar R1 Interior Recibida'],
    ['RFF','📝 Marcar RF Interior Fichaje'],
-   ['RFS','📤 Marcar RF int obs subsanadas por revisar'],
+   ['RFS','📤 Marcar RF Int. Entregada por obra'],
    ['RF','✅ Marcar RF Interior Recibida']]
    .filter(([st]) => enFase(st) && !(esObs(st) && !veObs())).forEach(([st,label])=>{
     const b=document.createElement('button');
@@ -2529,6 +2526,32 @@ function showCtxMenu(mx,my,h){
     }
     ctxMenu.appendChild(b);
   });
+  // Deshacer "Entregada por obra" el mismo día en que se marcó
+  const PASO_ATRAS = { R1S:'R1F', RFS:'RFF' };
+  if (veObs() && PASO_ATRAS[h.state] && enFase(h.state)){
+    const rdAct = rankDatesOf(h);
+    const marcadaHoy = rdAct[h.state] === getTodayISO();
+    const bund = document.createElement('button');
+    if (isAdmin || marcadaHoy){
+      bund.innerHTML = '↩ Quitar «Entregada por obra»';
+      bund.style.color = '#888';
+      bund.onclick = () => {
+        const destino = PASO_ATRAS[h.state];
+        update(ref(db,'helsby/v2/'+h.id), {
+          state: destino,
+          stateDate: getTodayISO(),
+          rankDates: computeRankDatesForLower(h, STATE_RANK[destino]),
+        });
+        ctxMenu.style.display='none';
+      };
+    } else {
+      bund.textContent = '🔒 «Entregada por obra» de un día anterior';
+      bund.style.color='#bbb'; bund.style.fontSize='11px'; bund.style.cursor='not-allowed'; bund.disabled=true;
+    }
+    const sepU=document.createElement('div'); sepU.className='sep';
+    ctxMenu.appendChild(sepU); ctxMenu.appendChild(bund);
+  }
+
   const sep0=document.createElement('div'); sep0.className='sep';
   const bclear=document.createElement('button');
   if(!enDom){ ctxMenu.appendChild(sep0); }
@@ -2815,10 +2838,10 @@ function showPatioCtxMenu(mx,my,p){
   }
 
   [['R1EF','🟠 Marcar R1 Ext Fichaje'],
-   ['R1ES','📤 Marcar R1 ext obs subsanadas por revisar'],
+   ['R1ES','📤 Marcar R1 Ext. Entregada por obra'],
    ['R1E','🟠 Marcar R1 Ext Recibido'],
    ['RFEF','🟡 Marcar RF Ext Fichaje'],
-   ['RFES','📤 Marcar RF ext obs subsanadas por revisar'],
+   ['RFES','📤 Marcar RF Ext. Entregada por obra'],
    ['RFE','✅ Marcar RF Ext Recibido']].filter(([k]) => enFase(k) && !(esObs(k) && !veObs())).forEach(([k,label])=>{
     const b=document.createElement('button');
     const target = PATIO_RANK_OF[k];
@@ -2831,6 +2854,24 @@ function showPatioCtxMenu(mx,my,p){
     }
     ctxMenu.appendChild(b);
   });
+
+  // Deshacer "Entregada por obra" el mismo día en que se marcó
+  const RANGO_S = { R1ES: PATIO_RANK_OF.R1ES, RFES: PATIO_RANK_OF.RFES };
+  const claveS = Object.keys(RANGO_S).find(k => RANGO_S[k] === curRank && enFase(k));
+  if (veObs() && claveS){
+    const fechaS = p[PATIO_FIELDS[claveS][1]];
+    const bund = document.createElement('button');
+    if (isAdmin || fechaS === today){
+      bund.innerHTML = '↩ Quitar «Entregada por obra»';
+      bund.style.color = '#888';
+      bund.onclick = () => setPatioRank(curRank - 1);
+    } else {
+      bund.textContent = '🔒 «Entregada por obra» de un día anterior';
+      bund.style.color='#bbb'; bund.style.fontSize='11px'; bund.style.cursor='not-allowed'; bund.disabled=true;
+    }
+    const sepU=document.createElement('div'); sepU.className='sep';
+    ctxMenu.appendChild(sepU); ctxMenu.appendChild(bund);
+  }
 
   const sepP=document.createElement('div'); sepP.className='sep'; ctxMenu.appendChild(sepP);
   const bclear=document.createElement('button');
@@ -3581,16 +3622,16 @@ window.verDetalle = () => {
     :
     mkTable('R0','R0 Interior — Revisión 0','#0C447C') +
     mkTable('R1F','R1 Interior — Fichaje','#00695C') +
-    (veObs() ? mkTable('R1S','R1 int obs subsanadas por revisar','#00554A') : '') +
+    (veObs() ? mkTable('R1S','R1 Interior — Entregada por obra','#00554A') : '') +
     mkTable('R1','R1 Interior — Recibida','#27500A') +
     mkTable('RFF','RF Interior — Fichaje','#6C2A8C') +
-    (veObs() ? mkTable('RFS','RF int obs subsanadas por revisar','#54207A') : '') +
+    (veObs() ? mkTable('RFS','RF Interior — Entregada por obra','#54207A') : '') +
     mkTable('RF','RF Interior — Recibida','#1a1a2e') +
     mkTable('R1EF','R1 Exterior — Fichaje','#A85A00') +
-    (veObs() ? mkTable('R1ES','R1 ext obs subsanadas por revisar','#8A4D00') : '') +
+    (veObs() ? mkTable('R1ES','R1 Exterior — Entregada por obra','#8A4D00') : '') +
     mkTable('R1E','R1 Exterior — Recibido','#8a7000') +
     mkTable('RFEF','RF Exterior — Fichaje','#7a6000') +
-    (veObs() ? mkTable('RFES','RF ext obs subsanadas por revisar','#6B5600') : '') +
+    (veObs() ? mkTable('RFES','RF Exterior — Entregada por obra','#6B5600') : '') +
     mkTable('RFE','RF Exterior — Recibido','#5C4A00') +
     mkTable('DOM','DOM','#111111');
 
@@ -3649,16 +3690,16 @@ window.verHistorial = async () => {
   const ROWS_TODAS = [
     { key:'R0',  label:'R0 int.',  bg:'#E6F1FB', color:'#0C447C', cellColor:'#0C447C' },
     { key:'R1F', label:'R1 int. (fichaje)',  bg:'#E0F2F1', color:'#00695C', cellColor:'#00695C' },
-    { key:'R1S', label:'R1 int. (subsanadas)', bg:'#CDE7E4', color:'#00554A', cellColor:'#00554A' },
+    { key:'R1S', label:'R1 int. (entregadas)', bg:'#CDE7E4', color:'#00554A', cellColor:'#00554A' },
     { key:'R1',  label:'R1 int. (recibida)',  bg:'#EAF3DE', color:'#27500A', cellColor:'#27500A' },
     { key:'RFF', label:'RF int. (fichaje)',  bg:'#F1E6F8', color:'#6C2A8C', cellColor:'#6C2A8C' },
-    { key:'RFS', label:'RF int. (subsanadas)', bg:'#DCC9EC', color:'#54207A', cellColor:'#54207A' },
+    { key:'RFS', label:'RF int. (entregadas)', bg:'#DCC9EC', color:'#54207A', cellColor:'#54207A' },
     { key:'RF',  label:'RF int. (recibida)',  bg:'#1a1a2e', color:'#ffffff', cellColor:'#1a1a2e' },
     { key:'R1EF', label:'R1 ext. (fichaje)',  bg:'#FDEBD3', color:'#A85A00', cellColor:'#A85A00' },
-    { key:'R1ES',label:'R1 ext. (subsanadas)', bg:'#F8D7B0', color:'#8A4D00', cellColor:'#8A4D00' },
+    { key:'R1ES',label:'R1 ext. (entregadas)', bg:'#F8D7B0', color:'#8A4D00', cellColor:'#8A4D00' },
     { key:'R1E', label:'R1 ext. (recibido)',  bg:'#FFFBE0', color:'#8a7000', cellColor:'#8a7000' },
     { key:'RFEF', label:'RF ext. (fichaje)',  bg:'#FFF3B0', color:'#7a6000', cellColor:'#7a6000' },
-    { key:'RFES',label:'RF ext. (subsanadas)', bg:'#F2E08A', color:'#6B5600', cellColor:'#6B5600' },
+    { key:'RFES',label:'RF ext. (entregadas)', bg:'#F2E08A', color:'#6B5600', cellColor:'#6B5600' },
     { key:'RFE', label:'RF ext. (recibido)',  bg:'#F5DC55', color:'#5C4A00', cellColor:'#5C4A00' },
     { key:'DOM', label:'DOM',  bg:'#E4E4E4', color:'#111', cellColor:'#111' },
     { key:'PP',  label:'P. presión',   bg:'#DDEAF8', color:'#0D47A1', cellColor:'#1565C0' },
